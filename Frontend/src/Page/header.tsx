@@ -209,7 +209,7 @@ export default function EtsyStyleHeader() {
     }
   };
 
-  const onClickAway = (ev?: MouseEvent | TouchEvent) => setResultsOpen(false);
+const onClickAway = () => setResultsOpen(false);
 
   const handleSelectMatch = (match: { label: string; path: string }) => {
     setSearchTerm("");
@@ -317,7 +317,8 @@ export default function EtsyStyleHeader() {
       }
 
       // Optionally use respJson if your backend returns an id
-      const respJson = await resp.json().catch(() => null);
+        await resp.json().catch(() => {});
+
 
       setSnackbar({ open: true, message: "Saved successfully — opening WhatsApp...", severity: "success" });
 

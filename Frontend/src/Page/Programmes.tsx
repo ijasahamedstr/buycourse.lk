@@ -159,7 +159,7 @@ const Programmes: React.FC = () => {
                         "& .image-bg": {
                           position: "absolute",
                           inset: 0,
-                          backgroundImage: (theme) =>
+                          backgroundImage: () =>
                             `linear-gradient(to bottom, rgba(0,0,0,0.16), rgba(0,0,0,0.02)), url(${course.image})`,
                           backgroundSize: "cover",
                           backgroundPosition: "center",

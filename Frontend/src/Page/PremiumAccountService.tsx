@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import type { CSSProperties } from "react";
 
 /**
  * PremiumAccountService (Single-file React component)
