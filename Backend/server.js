@@ -5,7 +5,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import inquirysection from "./routes/inquiry.route.js";
 import requestservices from "./routes/requestservices.router.js";
-
+import AccountAdminloginrouter from './routes/AccountLogin.route.js';
+import AccountAdminrouter from "./routes/AccountRegisterAdmin.route.js";
 
 // Create an instance of Express
 const app = express();
@@ -19,8 +20,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: [
-      "https://buycourse-lk.vercel.app",
-      "https://digilasersa-admin.vercel.app"
+      "http://localhost:5173",
+      "http://localhost:3000"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
@@ -37,8 +38,9 @@ app.get("/", (req, res) => {
 
 //ADMIN -> MIDDLEWARE -> SERVER
 app.use('/inquiry',inquirysection);
-
 app.use('/requestservices',requestservices);
+app.use('/Adminlogin', AccountAdminloginrouter);
+app.use('/Adminregister',AccountAdminrouter);
 
 
 // Start server

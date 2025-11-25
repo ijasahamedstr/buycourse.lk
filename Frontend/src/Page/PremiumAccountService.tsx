@@ -1,13 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
-
-/**
- * PremiumAccountService (Single-file React component)
- * - Improved, modern visual design with responsive grid
- * - CSS injected via a <style> tag so hover, media queries and focus states work
- * - Accessible labels, improved badges, out-of-stock treatment
- * - Keeps dynamic Rellax import (no-op if not installed)
- */
+import React, { useEffect, useRef, useState } from "react";
 
 type Service = {
   id: string;
@@ -15,208 +6,454 @@ type Service = {
   originalPrice: number;
   discountPrice?: number;
   discount?: string;
-  rating: number; // 0-5
+  rating?: number;
   image: string;
   status: "available" | "out-of-stock" | "best-value" | "trending";
 };
 
 const servicesData: Service[] = [
-  { id: "netflix-4k", title: "Netflix Premium 4K UHD", originalPrice: 25.99, discountPrice: 14.9, discount: "-40%", rating: 5, image: "https://shopallpremium.com/wp-content/uploads/2022/02/netflix.jpg.webp", status: "available" },
-  { id: "amazon-prime-video", title: "Amazon Prime Video", originalPrice: 10.5, discountPrice: 1.26, discount: "-77%", rating: 4, image: "https://shopallpremium.com/wp-content/uploads/2022/02/primevideo.png.webp", status: "trending" },
-  { id: "spotify-premium", title: "Spotify Premium", originalPrice: 9.99, discountPrice: 2.69, discount: "-73%", rating: 4, image: "https://shopallpremium.com/wp-content/uploads/2022/02/45cc6c91692a3665d97b570a3272132a.jpg", status: "out-of-stock" },
-  { id: "youtube-premium-in", title: "YouTube Premium (India)", originalPrice: 17.38, discountPrice: 8.78, discount: "-50%", rating: 3, image: "https://shopallpremium.com/wp-content/uploads/2022/02/YouTube-Premium-512x512-1.png.webp", status: "available" },
-  { id: "altbalaji-premium", title: "ALTBalaji Premium", originalPrice: 17.58, discountPrice: 0.76, discount: "-96%", rating: 3, image: "https://shopallpremium.com/wp-content/uploads/2022/02/altbalaji.png.webp", status: "available" },
-  { id: "hma-vpn", title: "HMA VPN", originalPrice: 19.99, discountPrice: 12.49, discount: "-60%", rating: 5, image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-33.png", status: "available" },
-  { id: "nord-vpn-hotstar", title: "Nord VPN Hotstar", originalPrice: 13.99, discountPrice: 7.99, discount: "-46%", rating: 5, image: "https://shopallpremium.com/wp-content/uploads/2022/02/HMA-LOG.png", status: "best-value" },
-  { id: "disney-hotstar", title: "Disney+ Hotstar", originalPrice: 10.99, discountPrice: 3.99, discount: "-64%", rating: 4, image: "https://shopallpremium.com/wp-content/uploads/2023/09/unnamed-6.png", status: "out-of-stock" },
-  { id: "sun-nxt", title: "Sun NXT", originalPrice: 9.99, discountPrice: 3.99, discount: "-60%", rating: 3, image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-2.png", status: "out-of-stock" },
-  { id: "hoichoi-bengali-movies", title: "Hoichoi Bengali Movies", originalPrice: 3.99, discountPrice: 1.99, discount: "-50%", rating: 3, image: "https://shopallpremium.com/wp-content/uploads/2022/02/sonyliv-1.png", status: "out-of-stock" },
+  { id: "netflix-4k", title: "Netflix Premium 4K UHD", originalPrice: 2590, discountPrice: 1490, image: "https://shopallpremium.com/wp-content/uploads/2022/02/netflix.jpg.webp", status: "available" },
+  { id: "amazon-prime-video", title: "Amazon Prime Video", originalPrice: 1050, discountPrice: 260, image: "https://shopallpremium.com/wp-content/uploads/2022/02/primevideo.png.webp", status: "trending" },
+  { id: "spotify-premium", title: "Spotify Premium", originalPrice: 999, discountPrice: 269, image: "https://shopallpremium.com/wp-content/uploads/2022/02/45cc6c91692a3665d97b570a3272132a.jpg", status: "out-of-stock" },
+  { id: "youtube-premium-in", title: "YouTube Premium (India)", originalPrice: 1738, discountPrice: 878, image: "https://shopallpremium.com/wp-content/uploads/2022/02/YouTube-Premium-512x512-1.png.webp", status: "available" },
+  { id: "altbalaji-premium", title: "ALTBalaji Premium", originalPrice: 1758, discountPrice: 760, image: "https://shopallpremium.com/wp-content/uploads/2022/02/altbalaji.png.webp", status: "available" },
+  { id: "hma-vpn", title: "HMA VPN", originalPrice: 1999, discountPrice: 1249, image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-33.png", status: "available" },
 ];
 
-const formatPrice = (price: number) => `$${price.toFixed(2)}`;
+const heroSlides = [
+  "https://shopallpremium.com/wp-content/uploads/2022/02/netflix.jpg.webp",
+  "https://shopallpremium.com/wp-content/uploads/2022/02/primevideo.png.webp",
+  "https://shopallpremium.com/wp-content/uploads/2022/02/45cc6c91692a3665d97b570a3272132a.jpg",
+];
 
-const slugify = (text: string) =>
-  text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/['"]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9\-]/g, "")
-    .replace(/\-+/g, "-");
+// Proper Sri Lankan Rupee format (LKR 1,490.00)
+const formatPrice = (price: number) =>
+  `LKR ${price.toLocaleString("en-LK", { minimumFractionDigits: 2 })}`;
 
-const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
-  return (
-    <div className="stars" aria-label={`Rating: ${rating} out of 5`}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <span key={i} className={`star ${i < rating ? "filled" : "empty"}`}>★</span>
-      ))}
-    </div>
-  );
-};
+interface Card {
+  image: string;
+  title?: string;
+  desc?: string;
+}
 
-const statusLabels: Record<Service["status"], string> = {
-  "best-value": "Best value",
-  trending: "Trending",
-  "out-of-stock": "Out of stock",
-  available: "",
-};
+// categories as requested (image placeholders kept); titles will be shown on each card
+const cards: Card[] = [
+  { image: "https://via.placeholder.com/497x225.png?text=digital-keys", title: "Digital Keys", desc: "License keys & top-ups" },
+  { image: "https://via.placeholder.com/497x225.png?text=games", title: "Games", desc: "Top game codes & bundles" },
+  { image: "https://via.placeholder.com/497x225.png?text=ott", title: "OTT", desc: "Streaming services" },
+  { image: "https://via.placeholder.com/497x225.png?text=premium", title: "Premium", desc: "Premium plans & upgrades" },
+  { image: "https://via.placeholder.com/497x225.png?text=streaming-combos", title: "Streaming Combos", desc: "Combo subscriptions" },
+  { image: "https://via.placeholder.com/497x225.png?text=utilities", title: "Utilities", desc: "Useful tools & apps" },
+  { image: "https://via.placeholder.com/497x225.png?text=vpn", title: "VPN", desc: "Secure VPN plans" },
+];
 
-const PremiumAccountService: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const servicesPerPage = 8;
-  const totalPages = Math.max(1, Math.ceil(servicesData.length / servicesPerPage));
-
-  const indexOfLast = currentPage * servicesPerPage;
-  const indexOfFirst = indexOfLast - servicesPerPage;
-
-  const currentServices = useMemo(() => servicesData.slice(indexOfFirst, indexOfLast), [indexOfFirst, indexOfLast]);
-
-  const circleRef = useRef<HTMLDivElement | null>(null);
+export default function PremiumSimpleHero() {
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    let instance: any = null;
-    if (typeof window !== "undefined" && circleRef.current) {
-      (async () => {
-        try {
-          const mod = await import("rellax");
-          const Rellax = mod?.default || mod;
-          instance = new Rellax(circleRef.current, { speed: -3, center: false, round: true });
-        } catch (e) {
-          // rellax not present — silently continue
-        }
-      })();
-    }
-    return () => {
-      if (instance && typeof instance.destroy === "function") instance.destroy();
-    };
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % heroSlides.length);
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
-  const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      try {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } catch {}
-    }
+  // ---------- Campus slider refs, state & handlers ----------
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - containerRef.current.offsetLeft);
+    setScrollLeft(containerRef.current.scrollLeft);
+  };
+  const handleMouseLeave = () => setIsDragging(false);
+  const handleMouseUp = () => setIsDragging(false);
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging || !containerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - containerRef.current.offsetLeft;
+    const walk = (x - startX) * 1;
+    containerRef.current.scrollLeft = scrollLeft - walk;
   };
 
-  // CSS string injected so we can use :hover and media queries
+  // ---------- Styles for campus slider and heading ----------
+  const containerStyle: React.CSSProperties = {
+    padding: "60px 5% 0 5%",
+  };
+
+  const sliderWrapperStyle: React.CSSProperties = {
+    overflowX: "auto",
+    display: "flex",
+    gap: "clamp(12px, 2vw, 28px)",
+    scrollBehavior: "smooth",
+    cursor: isDragging ? "grabbing" : "grab",
+    userSelect: "none",
+    scrollbarWidth: "none",
+    msOverflowStyle: "none",
+    paddingBottom: 0,
+  };
+
+  // slightly smaller card sizing
+  const cardStyle = (image: string): React.CSSProperties => ({
+    flex: "0 0 clamp(140px, 20%, 260px)",
+    aspectRatio: "497/225",
+    backgroundImage: `url(${image})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    borderRadius: "16px",
+    cursor: "pointer",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-end",
+    boxShadow: "0 6px 18px rgba(0,0,0,0.10)",
+    transition: "transform 0.28s ease, box-shadow 0.28s ease",
+    position: "relative",
+    overflow: "hidden",
+  });
+
+  const buttonStyle: React.CSSProperties = {
+    position: "absolute",
+    bottom: "12px",
+    left: "12px",
+    padding: "7px 14px",
+    backgroundColor: "#ffffff",
+    color: "rgb(0, 84, 248)",
+    border: "none",
+    borderRadius: "40px",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: "14px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    transition: "background 0.25s, color 0.25s",
+  };
+
+  const arrowStyle: React.CSSProperties = {
+    fontSize: "16px",
+    display: "inline-block",
+    transition: "transform 0.25s",
+  };
+
+  // ---------- CSS (added overlay/title styles) ----------
   const css = `
-    :root{ --bg:#ffffff; --muted:#9ca3af; --accent:#0a5397; --accent-2:#ef4444; --card-shadow: 0 6px 22px rgba(2,6,23,0.06); }
+    body, .page-wrap {
+      font-family: "Montserrat", sans-serif !important;
+    }
 
-    .premium-wrap{ position:relative; overflow:hidden; padding:56px 5%; background:linear-gradient(180deg,#fbfdff 0%, #ffffff 40%); font-family: Inter, Poppins, system-ui, sans-serif; }
-    .bg-circle{ position:absolute; left:-140px; top:-120px; width:460px; height:460px; border-radius:50%; background: radial-gradient(circle at 30% 30%, #e3f2fd 0%, rgba(163,188,255,0.18) 40%, transparent 60%); z-index:0; filter: blur(6px); }
-    .container{ position:relative; z-index:1; max-width:1200px; margin:0 auto; text-align:center; }
+    .page-wrap {
+      padding: 48px 5%;
+      background: #ffffff;
+      min-height: 100vh;
+      color: #111;
+    }
 
-    h1.title{ font-size:2rem; margin:0 0 6px; letter-spacing:0.6px; color:#0f172a; text-transform:uppercase; font-weight:800; }
-    h2.subtitle{ font-size:1rem; margin:0 0 24px; color:var(--muted); font-weight:600; }
+    .layout {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 26px;
+    }
 
-    .grid{ display:grid; gap:20px; grid-template-columns: repeat(4, minmax(0,1fr)); align-items:stretch; }
+    /* HERO SECTION */
+    .hero-slider {
+      position: relative;
+      height: 520px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 26px rgba(0,0,0,0.15);
+    }
 
-    /* Responsive */
-    @media (max-width:1024px){ .grid{ grid-template-columns: repeat(3, 1fr); } }
-    @media (max-width:800px){ .grid{ grid-template-columns: repeat(2, 1fr); } .premium-wrap{ padding:36px 4%; } }
-    @media (max-width:420px){ .grid{ grid-template-columns: 1fr; padding:0 8px; } h1.title{ font-size:1.4rem; } }
+    .slide {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+    }
+    .slide.active {
+      opacity: 1;
+    }
 
-    .card{ background:var(--bg); border-radius:14px; overflow:hidden; text-decoration:none; color:inherit; display:flex; flex-direction:column; transition: transform .28s cubic-bezier(.22,.9,.32,1), box-shadow .28s; box-shadow: var(--card-shadow); border:1px solid rgba(10,37,64,0.03); position:relative; min-height:240px; }
-    .card:focus{ outline:3px solid rgba(10,83,151,0.12); outline-offset:3px; }
-    .card:hover{ transform:translateY(-8px); box-shadow: 0 18px 40px rgba(2,6,23,0.12); }
+    .hero-slider::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.08), rgba(0,0,0,0.55));
+      z-index: 5;
+    }
 
-    .media{ padding:20px; display:flex; align-items:center; justify-content:center; min-height:120px; }
-    .media img{ width:88px; height:88px; object-fit:contain; border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7)); }
+    .hero-content {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 20;
+      color: white;
+      text-shadow: 0 3px 12px rgba(0,0,0,0.6);
+    }
+    .hero-content h3 {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 800;
+    }
+    .hero-content p {
+      margin-top: 6px;
+      font-weight: 500;
+      font-size: 1.05rem;
+    }
 
-    .info{ padding:12px 16px 18px; display:flex; flex-direction:column; gap:8px; flex-grow:1; }
-    .title-small{ font-weight:700; font-size:0.95rem; color:#0f172a; line-height:1.25; }
+    /* DOTS */
+    .dots {
+      position: absolute;
+      bottom: 12px;
+      right: 20px;
+      display: flex;
+      gap: 8px;
+      z-index: 30;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      background: #ffffff88;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+    }
+    .dot.active {
+      background: #fff;
+    }
 
-    .price-row{ display:flex; align-items:center; gap:10px; justify-content:center; margin-top:auto; }
-    .original{ color:var(--muted); font-size:0.82rem; text-decoration:line-through; }
-    .final{ font-weight:800; font-size:1rem; color: #071133; }
+    /* SIDEBAR */
+    .sidebar {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 18px;
+      border: 1px solid #e6e6e6;
+      color: #222;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
 
-    .badge-discount{ position:absolute; left:12px; top:12px; padding:6px 10px; font-weight:800; font-size:0.75rem; color:#fff; border-radius:10px; background:var(--accent-2); box-shadow: 0 6px 16px rgba(239,68,68,0.14); }
-    .badge-status{ position:absolute; right:12px; top:12px; padding:6px 10px; font-weight:700; font-size:0.72rem; color:#fff; border-radius:10px; background:var(--accent); box-shadow: 0 6px 16px rgba(10,83,151,0.08); }
+    .sidebar h3 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #000;
+    }
 
-    .stars{ display:inline-flex; gap:4px; justify-content:center; }
-    .star{ font-size:0.95rem; line-height:1; }
-    .star.filled{ color:#ffb020; }
-    .star.empty{ color:#e7e9ee; }
+    .discount-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
 
-    .out-overlay{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.86); font-weight:800; color:#ef4444; font-size:0.95rem; border-radius:14px; pointer-events:none; }
+    .discount-item {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
 
-    .pagination{ display:flex; gap:8px; justify-content:center; margin-top:34px; align-items:center; }
-    .page-btn{ width:36px; height:36px; border-radius:18px; border:none; background:#f3f4f6; font-weight:700; cursor:pointer; }
-    .page-btn.active{ background:var(--accent); color:#fff; }
-    .nav-btn{ width:36px; height:36px; border-radius:18px; border:none; background:#f3f4f6; cursor:pointer; }
+    .discount-thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f3f3f3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #eee;
+    }
 
+    .discount-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .discount-meta .name {
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: #333;
+    }
+
+    .discount-meta .price {
+      font-weight: 800;
+      color: #6b4de6;
+      margin-top: 2px;
+    }
+
+    /* CARD overlays */
+    .card-title {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      padding: 6px 10px;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      border-radius: 999px;
+      z-index: 12;
+      text-transform: none;
+      white-space: nowrap;
+    }
+
+    .card-desc {
+      position: absolute;
+      left: 12px;
+      bottom: 46px;
+      right: 12px;
+      font-size: 0.82rem;
+      color: #ffffffcc;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      z-index: 11;
+      line-height: 1.1;
+      max-height: 3em;
+      overflow: hidden;
+    }
+
+    @media(max-width:800px){
+      .layout { grid-template-columns: 1fr; }
+      .hero-slider { height: 300px; }
+    }
   `;
 
+  const fallbackImage = "/images/placeholder.svg";
+
+  // simple handler — replace with your routing or action
+  const onCardView = (card: Card) => {
+    // small safe default action — you can change to navigate, open modal, etc.
+    alert(`View: ${card.title ?? "item"}`);
+  };
+
   return (
-    <section className="premium-wrap" aria-labelledby="premium-heading">
+    <div className="page-wrap">
       <style>{css}</style>
-      <div ref={circleRef} className="bg-circle" aria-hidden />
 
-      <div className="container">
-        <h1 id="premium-heading" className="title">Streaming & VPN Services</h1>
-        <h2 className="subtitle">Unlock global content — secure your connection</h2>
+      <div className="layout">
+        {/* HERO IMAGE SLIDER */}
+        <div className="hero-slider" role="region" aria-label="Main hero slider">
+          {heroSlides.map((img, i) => (
+            <div
+              key={i}
+              className={`slide ${i === activeIndex ? "active" : ""}`}
+              style={{ backgroundImage: `url(${img})` }}
+              aria-hidden={i !== activeIndex}
+            />
+          ))}
 
-        <div className="grid" role="list">
-          {currentServices.map((service) => (
-            <Link
+          <div className="hero-content">
+            <h3>Streaming & Premium Deals</h3>
+            <p>Sri Lanka’s best daily offers — save more today!</p>
+          </div>
+
+          <div className="dots" role="tablist" aria-label="Hero slides">
+            {heroSlides.map((_, i) => (
+              <button
+                key={i}
+                className={`dot ${activeIndex === i ? "active" : ""}`}
+                onClick={() => setActiveIndex(i)}
+                aria-pressed={activeIndex === i}
+                title={`Show slide ${i + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* SIDEBAR */}
+        <aside className="sidebar" aria-label="Discounted services">
+          <h3>Discounted</h3>
+          <div className="discount-list">
+            {servicesData.map((s) => (
+              <div key={s.id} className="discount-item">
+                <div className="discount-thumb" aria-hidden>
+                  <img
+                    src={s.image}
+                    alt={s.title}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = fallbackImage;
+                    }}
+                  />
+                </div>
+                <div className="discount-meta">
+                  <div className="name">{s.title}</div>
+                  <div className="price">{formatPrice(s.discountPrice ?? s.originalPrice)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </aside>
+      </div>
+
+      {/* ---------- Campus / Category slider (full-width) ---------- */}
+      <div style={containerStyle}>
+        <div
+          ref={containerRef}
+          style={sliderWrapperStyle}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeave}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          className="hide-scrollbar"
+          role="list"
+          aria-label="Category slider"
+        >
+          {cards.map((card, index) => (
+            <div
+              key={index}
+              className="campus-card"
+              style={cardStyle(card.image)}
               role="listitem"
-              to={`/premium-service/${slugify(service.id)}`}
-              key={service.id}
-              className="card"
-              aria-disabled={service.status === "out-of-stock"}
-              tabIndex={0}
+              aria-label={card.title ?? `Card ${index + 1}`}
             >
-              {service.discount && <div className="badge-discount">{service.discount}</div>}
-              {service.status !== "available" && <div className="badge-status">{statusLabels[service.status]}</div>}
+              {/* Title badge (Name) */}
+              {card.title && <div className="card-title">{card.title}</div>}
 
-              <div className="media">
-                <img src={service.image} alt={service.title} loading="lazy" onError={(e) => { (e.target as HTMLImageElement).src = '/images/placeholder.svg'; }} />
-              </div>
+              {/* Optional description overlay */}
+              {card.desc && <div className="card-desc">{card.desc}</div>}
 
-              <div className="info">
-                <div>
-                  <div className="title-small">{service.title}</div>
-                  <div style={{ marginTop: 6 }}>
-                    <StarRating rating={service.rating} />
-                  </div>
-                </div>
-
-                <div className="price-row" aria-hidden>
-                  <div className="original">{formatPrice(service.originalPrice)}</div>
-                  <div className="final">{formatPrice(service.discountPrice ?? service.originalPrice)}</div>
-                </div>
-              </div>
-
-              {service.status === "out-of-stock" && <div className="out-overlay">Out of stock</div>}
-            </Link>
+              <button
+                style={buttonStyle}
+                onClick={() => onCardView(card)}
+                aria-label={`View ${card.title ?? "item"}`}
+              >
+                View <span style={arrowStyle}>→</span>
+              </button>
+            </div>
           ))}
         </div>
 
-        {totalPages > 1 && (
-          <div className="pagination" aria-label="pagination navigation">
-            <button className="nav-btn" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} aria-label="Previous page">‹</button>
-            {[...Array(totalPages)].map((_, i) => {
-              const page = i + 1;
-              return (
-                <button
-                  key={page}
-                  className={`page-btn ${currentPage === page ? "active" : ""}`}
-                  onClick={() => goToPage(page)}
-                  aria-current={currentPage === page ? "page" : undefined}
-                >
-                  {page}
-                </button>
-              );
-            })}
-            <button className="nav-btn" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} aria-label="Next page">›</button>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-};
+        <style>{`
+          .hide-scrollbar::-webkit-scrollbar { display: none; }
+          .fancy-heading::after {
+            content: "";
+            display: block;
+            width: 80px;
+            height: 4px;
+            margin: 12px auto 0;
+            background: linear-gradient(90deg, #0066ff, #00cc99);
+            border-radius: 2px;
+            animation: fadeInLine 1s ease forwards;
+          }
+          @keyframes fadeInLine { from { width: 0; opacity: 0; } to { width: 80px; opacity: 1; } }
 
-export default PremiumAccountService;
+          @media (max-width: 480px) { .campus-card { flex: 0 0 90% !important; } }
+          @media (min-width: 481px) and (max-width: 1024px) { .campus-card { flex: 0 0 48% !important; } }
+          @media (min-width: 1025px) { .campus-card { flex: 0 0 clamp(140px, 20%, 260px); } }
+
+          @media (hover: hover) {
+            .campus-card:hover { transform: scale(1.035); box-shadow: 0 12px 26px rgba(0,0,0,0.14); }
+            .campus-card button:hover { background-color: rgb(0, 84, 248); color: #ffffff; }
+            .campus-card button:hover span { transform: translateX(4px); }
+          }
+        `}</style>
+      </div>
+      {/* ---------- END ---------- */}
+    </div>
+  );
+}
