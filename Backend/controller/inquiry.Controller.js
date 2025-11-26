@@ -45,41 +45,12 @@ export const inquirycreate = async (req, res) => {
 };
 
 
-// // All inquiry View 
-// export const NewsIndex = async (req, res) => {
-//     try {
-//         const Newsview = await News.find();
-//         res.json(Newsview);
-//     } catch (error) {
-//         res.status(500).json({ message: error.message });
-//     }
-//   };
-
-// // single inquiry View 
-// export const NewsSingleDetails = async (req, res) => {
-//     try {
-//         const NewsSingleView = await News.findById(req.params.id);
-//         if (NewsSingleView == null) {
-//             return res.status(404).json({ message: "Cannot Find The News" });
-//         }
-//         else {
-//             res.json(NewsSingleView);
-//         }
-//     } catch (error) {
-//         return res.status(500).json({ message: error.message });
-//     }
-//   };
-
-// //  inquiry Delete
-// export const NewsDelete = async (req, res) => {
-//     const NewsId =  req.params.id;
-
-//     try {
-//          await News.deleteOne({_id: NewsId})
-//          res.json({message:"User News deleted!"});
-//     } catch (error) {
-//      res.status(500).json({message:error.message})
-//     }
-// };
-
-
+// All inquiry View 
+export const InquiryIndex = async (req, res) => {
+    try {
+        const Inquiryview = await Inquiry.find();
+        res.json(Inquiryview);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+  };

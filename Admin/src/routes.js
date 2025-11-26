@@ -7,6 +7,8 @@ import CardGiftcardIcon from "@mui/icons-material/CardGiftcard";
 import SliderSectionView from "layouts/Slider-section";
 import AddSlider from "layouts/Slider-section/AddSlider";
 import EditSlider from "layouts/Slider-section/EditSlider";
+import InquirySectionView from "layouts/Inquire Here";
+import RequestServicesView from "layouts/Request Service";
 
 const routes = [
   {
@@ -24,6 +26,22 @@ const routes = [
     icon: <CardGiftcardIcon />,
     route: "/Slider-section",
     component: <SliderSectionView />,
+  },
+  {
+    type: "collapse",
+    name: "Inquire section",
+    key: "Inquire-section",
+    icon: <CardGiftcardIcon />,
+    route: "/Inquire-section",
+    component: <InquirySectionView />,
+  },
+  {
+    type: "collapse",
+    name: "Request Service",
+    key: "Request-Service",
+    icon: <CardGiftcardIcon />,
+    route: "/Request-Service",
+    component: <RequestServicesView />,
   },
   {
     type: "collapse",
