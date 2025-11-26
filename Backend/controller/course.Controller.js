@@ -57,14 +57,14 @@ export const CourseCreate = async (req, res) => {
 
 // Get all courses
 export const CourseIndex = async (req, res) => {
-  try {
-    const courses = await CourseModel.find();
-    res.json(courses);
-  } catch (error) {
-    console.error("Error fetching courses:", error);
-    res.status(500).json({ message: error.message });
-  }
-};
+    try {
+        const Courseview = await CourseModel.find();
+        res.json(Courseview);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+  };
+
 
 // Get single course details
 export const CourseSingleDetails = async (req, res) => {
@@ -82,17 +82,17 @@ export const CourseSingleDetails = async (req, res) => {
 
 // Delete a course
 export const CourseDelete = async (req, res) => {
-  try {
-    const deleted = await CourseModel.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ message: "Course not found" });
+    const CourseId =  req.params.id;
+
+    try {
+         await CourseModel.deleteOne({_id: CourseId})
+         res.json({message:"User Promotionalgifts deleted!"});
+    } catch (error) {
+     res.status(500).json({message:error.message})
     }
-    res.json({ message: "Course deleted successfully!" });
-  } catch (error) {
-    console.error("Error deleting course:", error);
-    res.status(500).json({ message: error.message });
-  }
 };
+
+
 
 // Update a course
 export const CourseUpdate = async (req, res) => {

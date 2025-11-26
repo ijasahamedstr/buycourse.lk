@@ -9,6 +9,8 @@ import AddSlider from "layouts/Slider-section/AddSlider";
 import EditSlider from "layouts/Slider-section/EditSlider";
 import InquirySectionView from "layouts/Inquire Here";
 import RequestServicesView from "layouts/Request Service";
+import CourseSectionView from "layouts/Course";
+import AddCourse from "layouts/Course/Addcoures";
 
 const routes = [
   {
@@ -45,6 +47,14 @@ const routes = [
   },
   {
     type: "collapse",
+    name: "Course",
+    key: "Course",
+    icon: <CardGiftcardIcon />,
+    route: "/Course",
+    component: <CourseSectionView />,
+  },
+  {
+    type: "collapse",
     name: "Sign Out",
     key: "sign-in",
     icon: <Icon fontSize="small">login</Icon>,
@@ -54,6 +64,10 @@ const routes = [
   {
     route: "/AddSlider",
     component: <AddSlider />,
+  },
+  {
+    route: "/Addcoures",
+    component: <AddCourse />,
   },
   {
     route: "/EditSlider/:id",
