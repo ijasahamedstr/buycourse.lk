@@ -7,6 +7,7 @@ import inquirysection from "./routes/inquiry.route.js";
 import requestservices from "./routes/requestservices.router.js";
 import AccountAdminloginrouter from './routes/AccountLogin.route.js';
 import AccountAdminrouter from "./routes/AccountRegisterAdmin.route.js";
+import Slidersection from "./routes/slidersection.route.js";
 
 // Create an instance of Express
 const app = express();
@@ -21,7 +22,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "http://localhost:3000"
+      "http://localhost:3001"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
@@ -41,6 +42,7 @@ app.use('/inquiry',inquirysection);
 app.use('/requestservices',requestservices);
 app.use('/Adminlogin', AccountAdminloginrouter);
 app.use('/Adminregister',AccountAdminrouter);
+app.use('/slidersection',Slidersection);
 
 
 // Start server

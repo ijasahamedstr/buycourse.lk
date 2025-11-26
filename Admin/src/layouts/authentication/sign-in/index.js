@@ -45,7 +45,10 @@ function Basic() {
     }
 
     try {
-      const response = await axios.post("http://localhost:8000/Adminlogin", { email, password });
+      const response = await axios.post(`${process.env.REACT_APP_API_HOST}/Adminlogin`, {
+        email,
+        password,
+      });
 
       // Handle successful login (store token, user data, etc.)
       if (response.data.token) {

@@ -46,7 +46,7 @@ function Cover() {
     try {
       setIsLoading(true); // Set loading state
       // Send data to backend for user registration
-      const response = await fetch("http://localhost:8000/Adminregister", {
+      const response = await fetch(`${process.env.REACT_APP_API_HOST}/Adminregister`, {
         method: "POST", // Correct usage of method
         headers: { "Content-Type": "application/json" }, // Headers with correct formatting
         body: JSON.stringify({ name, email, password }), // Body in proper format
