@@ -43,6 +43,7 @@ app.use('/requestservices',requestservices);
 app.use('/Adminlogin', AccountAdminloginrouter);
 app.use('/Adminregister',AccountAdminrouter);
 app.use('/slidersection',Slidersection);
+app.use('/Couresdetails',);
 
 
 // Start server
