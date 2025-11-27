@@ -44,7 +44,7 @@ app.use('/requestservices',requestservices);
 app.use('/Adminlogin', AccountAdminloginrouter);
 app.use('/Adminregister',AccountAdminrouter);
 app.use('/slidersection',Slidersection);
-app.use('/Coures',CourseSection);
+// app.use('/Coures',CourseSection);
 
 
 // Start server
