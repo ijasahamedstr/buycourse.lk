@@ -1,155 +1,90 @@
 import moment from "moment";
 import CourseModel from "../models/Course.models.js";
 
-// At top of file:
-// import CourseModel from '../model/Course.Model.js'; // adjust path/case to your project
-
 export const CourseCreate = async (req, res) => {
-  try {
-    console.log("Incoming body:", req.body);
+    const { courseName, courseDescription,coursePrice,duration,courseImage ,mainHeadings,courseCategory,coursedemovideolink} = req.body;
 
-    // Destructure only allowed fields
-    let {
-      courseName = "",
-      courseDescription = "",
-      coursePrice = 0,
-      duration = "",
-      courseImage = "",
-      mainHeadings = [],
-      courseCategory = "",
-      coursedemovideolink = "",
-    } = req.body ?? {};
-
-    // Helper: parse JSON strings -> arrays/objects (keeps original value if parse fails)
-    const parseIfString = (val) => {
-      if (typeof val === "string") {
-        const trimmed = val.trim();
-        // try JSON first
-        try {
-          return JSON.parse(trimmed);
-        } catch {
-          // fallback comma-split
-          if (trimmed.includes(",")) return trimmed.split(",").map((s) => s.trim()).filter(Boolean);
-          return trimmed;
-        }
-      }
-      return val;
-    };
-
-    // Normalize mainHeadings to array of { heading: string, subHeadings: string[] }
-    mainHeadings = parseIfString(mainHeadings);
-    if (!Array.isArray(mainHeadings)) mainHeadings = [];
-
-    mainHeadings = mainHeadings.map((mh) => {
-      // mh could be string or object
-      if (typeof mh === "string") {
-        return { heading: mh.trim() || "Untitled", subHeadings: [] };
-      }
-
-      const rawHeading = mh.heading ?? mh.headingName ?? mh.title ?? "Untitled";
-      let subHeadings = mh.subHeadings ?? mh.subs ?? mh.children ?? [];
-      subHeadings = parseIfString(subHeadings);
-      if (!Array.isArray(subHeadings)) subHeadings = [];
-
-      // ensure subHeadings are strings
-      subHeadings = subHeadings.map((s) => (s === null || s === undefined ? "" : String(s).trim())).filter(Boolean);
-
-      return { heading: String(rawHeading).trim() || "Untitled", subHeadings };
-    });
-
-    // Sanitize simple fields
-    courseName = String(courseName).trim();
-    courseDescription = String(courseDescription).trim();
-    courseCategory = String(courseCategory).trim();
-    coursedemovideolink = String(coursedemovideolink).trim();
-    duration = String(duration).trim();
-    courseImage = String(courseImage).trim();
-
-    // Ensure numeric price
-    const parsedPrice = Number(coursePrice);
-    coursePrice = Number.isFinite(parsedPrice) ? parsedPrice : 0;
-
-    // Example quick validation
-    if (!courseName) {
-      return res.status(400).json({ status: 400, message: "courseName is required." });
+    // Input validation
+    if (!courseName || !courseDescription || !coursePrice || !duration|| !courseImage|| !mainHeadings|| !courseCategory|| !coursedemovideolink) {
+        return res.status(400).json({
+            status: 400,
+            message: 'Please provide gift name, gift type, and gift image.'
+        });
     }
 
-    const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    try {
+        const date = moment().format('YYYY-MM-DD');
 
-    // Build the new course document
-    const newCourse = new CourseModel({
-      courseName,
-      courseDescription,
-      coursePrice,
-      duration,
-      courseImage,
-      mainHeadings,
-      courseCategory,
-      coursedemovideolink,
-      date,
-      // optional defaults if your schema has these fields:
-      // courseContent: [],
-      // courseSubContent: []
-    });
+        const newCoures = new CourseModel({
+            courseName,
+            courseDescription,
+            coursePrice,
+            duration,
+            courseImage,
+            mainHeadings: mainHeadings || [],
+            courseCategory,
+            coursedemovideolink,
+            date,
+        });
 
-    const savedCourse = await newCourse.save();
+        const savedcoures = await newCoures.save();
 
-    return res.status(201).json({
-      status: 201,
-      message: "Course created successfully.",
-      data: savedCourse,
-    });
-  } catch (error) {
-    console.error("Error creating course:", error);
-    return res.status(500).json({
-      status: 500,
-      message: "Internal server error. Could not create the course.",
-      error: error?.message ?? String(error),
-    });
-  }
+        res.status(201).json({
+            status: 201,
+            message: 'News created successfully.',
+            data: savedcoures,
+        });
+    } catch (error) {
+        console.error('Error creating News:', error);
+        res.status(500).json({
+            status: 500,
+            message: 'Internal server error. Could not create the News.',
+            error: error.message,
+        });
+    }
 };
 
 
-// // Get all courses
-// export const CourseIndex = async (req, res) => {
-//     try {
-//         const Courseview = await CourseModel.find();
-//         res.json(Courseview);
-//     } catch (error) {
-//         res.status(500).json({ message: error.message });
-//     }
-//   };
+// Get all courses
+export const CourseIndex = async (req, res) => {
+    try {
+        const Courseview = await CourseModel.find();
+        res.json(Courseview);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+  };
 
 
-// // Get single course details
-// export const CourseSingleDetails = async (req, res) => {
-//   try {
-//     const course = await CourseModel.findById(req.params.id);
-//     if (!course) {
-//       return res.status(404).json({ message: "Course not found" });
-//     }
-//     res.json(course);
-//   } catch (error) {
-//     console.error("Error fetching course:", error);
-//     res.status(500).json({ message: error.message });
-//   }
-// };
+// Get single course details
+export const CourseSingleDetails = async (req, res) => {
+  try {
+    const course = await CourseModel.findById(req.params.id);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+    res.json(course);
+  } catch (error) {
+    console.error("Error fetching course:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
 
-// // Delete a course
-// export const CourseDelete = async (req, res) => {
-//     const CourseId =  req.params.id;
+// Delete a course
+export const CourseDelete = async (req, res) => {
+    const CourseId =  req.params.id;
 
-//     try {
-//          await CourseModel.deleteOne({_id: CourseId})
-//          res.json({message:"User Promotionalgifts deleted!"});
-//     } catch (error) {
-//      res.status(500).json({message:error.message})
-//     }
-// };
+    try {
+         await CourseModel.deleteOne({_id: CourseId})
+         res.json({message:"User Promotionalgifts deleted!"});
+    } catch (error) {
+     res.status(500).json({message:error.message})
+    }
+};
 
 
 
-// // Update a course
+// Update a course
 
 // export const CourseUpdate = async (req, res) => {
 //   try {
