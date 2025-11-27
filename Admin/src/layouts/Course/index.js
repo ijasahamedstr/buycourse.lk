@@ -14,9 +14,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CircularProgress from "@mui/material/CircularProgress";
 import Pagination from "@mui/material/Pagination";
 import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import InputLabel from "@mui/material/InputLabel";
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import axios from "axios";
@@ -134,7 +131,7 @@ function CourseCard({ course, onDelete, deletingId }) {
         </Box>
 
         <Box sx={{ display: "flex", gap: 1 }}>
-          <Link to={`/EditCourse/${course._id}`} style={{ textDecoration: "none" }}>
+          <Link to={`/Editcoures/${course._id}`} style={{ textDecoration: "none" }}>
             <IconButton size="small" color="primary">
               <EditIcon fontSize="small" />
             </IconButton>

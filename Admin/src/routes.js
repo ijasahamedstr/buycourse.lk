@@ -11,6 +11,7 @@ import InquirySectionView from "layouts/Inquire Here";
 import RequestServicesView from "layouts/Request Service";
 import CourseSectionView from "layouts/Course";
 import AddCourse from "layouts/Course/Addcoures";
+import EditCourse from "layouts/Course/Editcoures";
 
 const routes = [
   {
@@ -68,6 +69,10 @@ const routes = [
   {
     route: "/Addcoures",
     component: <AddCourse />,
+  },
+  {
+    route: "/Editcoures/:id",
+    component: <EditCourse />,
   },
   {
     route: "/EditSlider/:id",
