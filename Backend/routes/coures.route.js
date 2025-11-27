@@ -2,7 +2,7 @@ import express from "express";
 import { CourseCreate, CourseDelete, CourseIndex, CourseSingleDetails, CourseUpdate } from "../controller/Course.Controller.js";
 
 // Create a new router instance
-const CourseSection = express.Router()
+const CourseSection = express.Router();
 
 // Create new course
 CourseSection.post("/", CourseCreate);
