@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 // Define the schema
-const InquirySchema = new mongoose.Schema({
+const InquirysSchema = new mongoose.Schema({
     name: String,
     mobile: String,
     inquirytype: String,
@@ -12,7 +12,7 @@ const InquirySchema = new mongoose.Schema({
 
 
 // Create the model
-const Inquiry = mongoose.model('Inquiry', InquirySchema);
+const Inquirys = mongoose.model('Inquirys', InquirysSchema);
 
 // Export the model
-export default Inquiry;
+export default Inquirys;

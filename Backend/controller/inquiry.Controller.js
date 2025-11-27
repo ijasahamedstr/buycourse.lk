@@ -1,10 +1,10 @@
 import moment from 'moment';
-import Inquiry from '../models/inquiry.models.js';
+import Inquirys from '../models/Inquirys.models.js';
 
 
 //  inquiry Create
 
-export const inquirycreate = async (req, res) => {
+export const Inquirycreate = async (req, res) => {
     const { name, mobile, inquirytype, ordernumber, orderdate } = req.body;
 
     // Input validation
@@ -18,7 +18,7 @@ export const inquirycreate = async (req, res) => {
     try {
         const date = moment().format('YYYY-MM-DD');
 
-        const newInquiry = new Inquiry({
+        const newInquiry = new Inquirys({
             name,
             mobile,
             inquirytype,
