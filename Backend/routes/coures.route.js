@@ -5,7 +5,7 @@ import { CourseCreate, CourseDelete, CourseIndex, CourseSingleDetails, CourseUpd
 const CourseSection = express.Router();
 
 // Create new course
-CourseSection.post("/",CourseCreate);
+CourseSection.post("/", CourseCreate);
 
 // View all courses
 CourseSection.get("/", CourseIndex);
@@ -14,7 +14,7 @@ CourseSection.get("/", CourseIndex);
 CourseSection.get("/:id", CourseSingleDetails);
 
 // Delete a course
-CourseSection.delete("/:id", CourseDelete);
+CourseSection.delete("/:id",CourseDelete );
 
 // Update a course
 CourseSection.put("/:id", CourseUpdate);
