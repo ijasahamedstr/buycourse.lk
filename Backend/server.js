@@ -3,12 +3,13 @@ import express from "express";
 import connectDB from "./lib/db.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import inquirysection from "./routes/Inquiry.route.js";
 import requestservices from "./routes/Requestservices.router.js";
 import AccountAdminloginrouter from './routes/AccountLogin.route.js';
 import AccountAdminrouter from "./routes/AccountRegisterAdmin.route.js";
 import Slidersection from "./routes/Slidersection.route.js";
 import CourseSection from "./routes/Coures.route.js";
+import Inquirysection from "./routes/Inquiry.route.js";
+import Requestservices from "./routes/Requestservices.router.js";
 
 // Create an instance of Express
 const app = express();
@@ -39,8 +40,8 @@ app.get("/", (req, res) => {
 });
 
 //ADMIN -> MIDDLEWARE -> SERVER
-app.use('/inquiry',inquirysection);
-app.use('/requestservices',requestservices);
+app.use('/inquiry',Inquirysection);
+app.use('/requestservices',Requestservices);
 app.use('/Adminlogin', AccountAdminloginrouter);
 app.use('/Adminregister',AccountAdminrouter);
 app.use('/slidersection',Slidersection);
