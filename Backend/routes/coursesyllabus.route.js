@@ -1,5 +1,5 @@
 import express from 'express';
-import { Newscreate, NewsDelete, NewsIndex, NewsSingleDetails, Newsupdate } from '../controller/coursesyllabus.Controller.js';
+import { Newscreate, NewsDelete, NewsIndex, NewsSingleDetails, Newsupdate } from '../controller/News.Controller.js';
 
 // Create a new router instance
 const coursesyllabussection = express.Router();
