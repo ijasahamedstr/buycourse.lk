@@ -1,5 +1,5 @@
 import moment from 'moment';
-import News from '../models/News.models.js';
+import News from '../models/coursesyllabus.models.js';
 
 export const Newscreate = async (req, res) => {
     const { filename } = req.file;

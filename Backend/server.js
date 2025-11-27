@@ -8,7 +8,7 @@ import requestservices from "./routes/requestservices.router.js";
 import AccountAdminloginrouter from './routes/AccountLogin.route.js';
 import AccountAdminrouter from "./routes/AccountRegisterAdmin.route.js";
 import Slidersection from "./routes/slidersection.route.js";
-import Newssection from "./routes/News.route.js";
+import coursesyllabussection from "./routes/coursesyllabus.route.js";
 
 
 // Create an instance of Express
@@ -45,7 +45,7 @@ app.use('/requestservices',requestservices);
 app.use('/Adminlogin', AccountAdminloginrouter);
 app.use('/Adminregister',AccountAdminrouter);
 app.use('/slidersection',Slidersection);
-app.use('/News',Newssection);
+app.use('/coursesyllabus',coursesyllabussection);
 
 
 // Start server
