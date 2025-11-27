@@ -1,5 +1,5 @@
 import moment from 'moment';
-import Requestservices from '../models/Requestservices.models.js';
+import Requestservices from '../models/requestservices.models.js';
 
 
 //  inquiry Create

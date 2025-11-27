@@ -1,14 +1,14 @@
 import express from 'express';
-import {requestIndex, Requestservicescreate } from '../controller/Requestservices.Controller.js';
+import {requestIndex, Requestservicescreate } from '../controller/requestservices.Controller.js';
 
 // Create a new router instance
-const Requestservices = express.Router();
+const requestservices = express.Router();
 // Create the Data Register
-Requestservices.post('/',Requestservicescreate);
+requestservices.post('/',Requestservicescreate);
 
 // // View the Data Register
-Requestservices.get('/',requestIndex);
+requestservices.get('/',requestIndex);
 
 
 
-export default Requestservices;
+export default requestservices;

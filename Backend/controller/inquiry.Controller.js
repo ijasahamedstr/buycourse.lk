@@ -1,5 +1,5 @@
 import moment from 'moment';
-import Inquiry from '../models/Inquiry.models.js';
+import Inquiry from '../models/inquiry.models.js';
 
 
 //  inquiry Create
