@@ -1,30 +1,23 @@
-import mongoose from "mongoose";
-const { Schema } = mongoose;
+import mongoose from 'mongoose';
 
-const MainHeadingSchema = new Schema({
-  heading: { type: String, required: true },
-  subHeadings: { type: [String], default: [] } // array of strings
-}, { _id: false }); // optional: disable _id on subdocs if you want
-
-const CoursesSchema = new Schema({
-  courseName: String,
-  courseDescription: String,
-  coursePrice: Number,
-  duration: String,
-  courseImage: String,
-
-  // array of subdocuments { heading, subHeadings }
-  mainHeadings: {
-    type: [MainHeadingSchema],
-    default: [],
-  },
-
-  courseCategory: String,
-  coursedemovideolink: String,
-  date: String,
-}, {
-  timestamps: true
+// Define the schema
+const NewsSchema = new mongoose.Schema({
+    newsname: {
+        type: String,
+    },
+    newsdec: {
+        type: String,
+    },
+    newsimage: {
+        type: String,
+    },
+    date: {
+        type: Date
+    }
 });
 
-const Courses = mongoose.model("Courses", CoursesSchema);
-export default Courses;
+// Create the model
+const News = mongoose.model('News', NewsSchema);
+
+// Export the model
+export default News;

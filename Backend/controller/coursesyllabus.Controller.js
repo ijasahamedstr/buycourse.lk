@@ -1,10 +1,11 @@
 import moment from 'moment';
+import News from '../models/coursesyllabus.models.js';
 
 export const Newscreate = async (req, res) => {
-    const { courseName, courseDescription,coursePrice,duration,courseImage ,mainHeadings,courseCategory,coursedemovideolink } = req.body;
+    const { newsname, newsdec } = req.body;
 
     // Input validation
-    if (!courseName || !courseDescription || !coursePrice || !duration|| !courseImage|| !mainHeadings|| !courseCategory|| !coursedemovideolink) {
+    if (!newsname || !newsdec || !filename) {
         return res.status(400).json({
             status: 400,
             message: 'Please provide gift name, gift type, and gift image.'
@@ -14,30 +15,25 @@ export const Newscreate = async (req, res) => {
     try {
         const date = moment().format('YYYY-MM-DD');
 
-        const newCoures = new News({
-            courseName,
-            courseDescription,
-            coursePrice,
-            duration,
-            courseImage,
-            mainHeadings: mainHeadings || [],
-            courseCategory,
-            coursedemovideolink,
+        const newNews = new News({
+            newsname,
+            newsdec,
+            newsimage: filename,
             date,
         });
 
-        const savedcoures = await newCoures.save();
+        const savedNews = await newNews.save();
 
         res.status(201).json({
             status: 201,
-            message: 'coures created successfully.',
-            data: savedcoures,
+            message: 'News created successfully.',
+            data: savedNews,
         });
     } catch (error) {
-        console.error('Error creating coures:', error);
+        console.error('Error creating News:', error);
         res.status(500).json({
             status: 500,
-            message: 'Internal server error. Could not create the coures.',
+            message: 'Internal server error. Could not create the News.',
             error: error.message,
         });
     }
