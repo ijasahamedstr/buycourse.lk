@@ -1,5 +1,4 @@
 import moment from 'moment';
-import News from '../models/coursesyllabus.models.js';
 
 export const Newscreate = async (req, res) => {
     const { courseName, courseDescription,coursePrice,duration,courseImage ,mainHeadings,courseCategory,coursedemovideolink } = req.body;
