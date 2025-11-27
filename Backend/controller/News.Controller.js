@@ -1,11 +1,11 @@
 import moment from 'moment';
-import News from '../models/News.models.js';
+import CourseModel from '../models/Coures.models.js';
 
 export const Newscreate = async (req, res) => {
-    const { courseName, courseDescription,coursePrice,duration,courseImage ,mainHeadings,courseCategory,coursedemovideolink } = req.body;
+    const { newsname, newsdec } = req.body;
 
     // Input validation
-    if (!courseName || !courseDescription || !coursePrice || !duration|| !courseImage|| !mainHeadings|| !courseCategory|| !coursedemovideolink) {
+    if (!newsname || !newsdec || !filename) {
         return res.status(400).json({
             status: 400,
             message: 'Please provide gift name, gift type, and gift image.'
@@ -15,15 +15,10 @@ export const Newscreate = async (req, res) => {
     try {
         const date = moment().format('YYYY-MM-DD');
 
-        const newNews = new News({
-            courseName,
-            courseDescription,
-            coursePrice,
-            duration,
-            courseImage,
-            mainHeadings: mainHeadings || [],
-            courseCategory,
-            coursedemovideolink,
+        const newNews = new CourseModel({
+            newsname,
+            newsdec,
+            newsimage: filename,
             date,
         });
 
