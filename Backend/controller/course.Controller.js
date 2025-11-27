@@ -1,7 +1,6 @@
 import moment from "moment";
 import CourseModel from "../models/Course.models.js";
 
-
 export const CourseCreate = async (req, res) => {
   try {
     console.log("Incoming:", req.body);
