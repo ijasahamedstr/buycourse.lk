@@ -3,12 +3,8 @@ import express from "express";
 import connectDB from "./lib/db.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import requestservices from "./routes/requestservices.router.js";
 import AccountAdminloginrouter from './routes/AccountLogin.route.js';
 import AccountAdminrouter from "./routes/AccountRegisterAdmin.route.js";
-import Slidersection from "./routes/slidersection.route.js";
-import CourseSection from "./routes/coures.route.js";
-import Inquirysection from "./routes/Inquiry.route.js";
 
 // Create an instance of Express
 const app = express();
@@ -22,8 +18,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: [
-      "https://buycourse-lk.vercel.app",
-      "http://localhost:3001"
+      "http://localhost:5173",
+      "http://localhost:3000"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
@@ -39,12 +35,8 @@ app.get("/", (req, res) => {
 });
 
 //ADMIN -> MIDDLEWARE -> SERVER
-app.use('/Inquiry',Inquirysection);
-app.use('/requestservices',requestservices);
 app.use('/Adminlogin', AccountAdminloginrouter);
 app.use('/Adminregister',AccountAdminrouter);
-app.use('/slidersection',Slidersection);
-app.use('/Coures',CourseSection);
 
 
 // Start server
