@@ -5,6 +5,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import AccountAdminloginrouter from './routes/AccountLogin.route.js';
 import AccountAdminrouter from "./routes/AccountRegisterAdmin.route.js";
+import Inquirysection from "./routes/Inquiry.route.js";
 
 // Create an instance of Express
 const app = express();
@@ -37,6 +38,7 @@ app.get("/", (req, res) => {
 //ADMIN -> MIDDLEWARE -> SERVER
 app.use('/Adminlogin', AccountAdminloginrouter);
 app.use('/Adminregister',AccountAdminrouter);
+app.use('/Inquiry',Inquirysection);
 
 
 // Start server
