@@ -1,5 +1,5 @@
 import express from 'express';
-import { Slidercreate, SliderDelete, SliderIndex, SliderSingleDetails, Sliderupdate } from '../controller/slider.Controller.js';
+import { Slidercreate, SliderDelete, SliderIndex, SliderSingleDetails, Sliderupdate } from '../controller/Slider.Controller.js';
 
 // Create a new router instance
 const Slidersection = express.Router()
