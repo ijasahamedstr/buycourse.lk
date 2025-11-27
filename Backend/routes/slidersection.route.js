@@ -2,7 +2,7 @@ import express from 'express';
 import { Slidercreate, SliderDelete, SliderIndex, SliderSingleDetails, Sliderupdate } from '../controller/slider.Controller.js';
 
 // Create a new router instance
-const Slidersection = express.Router();
+const Slidersection = express.Router()
 
 
 // Create the Data Register
