@@ -3,11 +3,10 @@ import express from "express";
 import connectDB from "./lib/db.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import requestservices from "./routes/Requestservices.router.js";
 import AccountAdminloginrouter from './routes/AccountLogin.route.js';
 import AccountAdminrouter from "./routes/AccountRegisterAdmin.route.js";
 import Slidersection from "./routes/Slidersection.route.js";
-import CourseSection from "./routes/Coures.route.js";
+// import CourseSection from "./routes/Coures.route.js";
 import Inquirysection from "./routes/Inquiry.route.js";
 import Requestservices from "./routes/Requestservices.router.js";
 
@@ -45,7 +44,7 @@ app.use('/requestservices',Requestservices);
 app.use('/Adminlogin', AccountAdminloginrouter);
 app.use('/Adminregister',AccountAdminrouter);
 app.use('/slidersection',Slidersection);
-app.use('/Coures',CourseSection);
+// app.use('/Coures',CourseSection);
 
 
 // Start server
