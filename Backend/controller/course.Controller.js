@@ -1,57 +1,82 @@
 import moment from "moment";
 import CourseModel from "../models/Course.models.js";
 
+// At top of file:
+// import CourseModel from '../model/Course.Model.js'; // adjust path/case to your project
+
 export const CourseCreate = async (req, res) => {
   try {
-    console.log("Incoming:", req.body);
+    console.log("Incoming body:", req.body);
 
-    // destructure only the fields you want to use
+    // Destructure only allowed fields
     let {
-      courseName,
-      courseDescription,
-      coursePrice,
-      duration,
-      courseImage,
-      mainHeadings,
-      courseCategory,
-      coursedemovideolink,
-    } = req.body;
+      courseName = "",
+      courseDescription = "",
+      coursePrice = 0,
+      duration = "",
+      courseImage = "",
+      mainHeadings = [],
+      courseCategory = "",
+      coursedemovideolink = "",
+    } = req.body ?? {};
 
-    // Helper: try to parse JSON strings, otherwise keep value
+    // Helper: parse JSON strings -> arrays/objects (keeps original value if parse fails)
     const parseIfString = (val) => {
       if (typeof val === "string") {
+        const trimmed = val.trim();
+        // try JSON first
         try {
-          return JSON.parse(val);
-        } catch (err) {
-          if (val.includes(",")) return val.split(",").map((s) => s.trim());
-          return val;
+          return JSON.parse(trimmed);
+        } catch {
+          // fallback comma-split
+          if (trimmed.includes(",")) return trimmed.split(",").map((s) => s.trim()).filter(Boolean);
+          return trimmed;
         }
       }
       return val;
     };
 
-
+    // Normalize mainHeadings to array of { heading: string, subHeadings: string[] }
     mainHeadings = parseIfString(mainHeadings);
     if (!Array.isArray(mainHeadings)) mainHeadings = [];
 
     mainHeadings = mainHeadings.map((mh) => {
+      // mh could be string or object
       if (typeof mh === "string") {
-        return { heading: mh, subHeadings: [] };
+        return { heading: mh.trim() || "Untitled", subHeadings: [] };
       }
-      const heading = mh.heading ?? mh.headingName ?? "Untitled";
-      let subHeadings = mh.subHeadings ?? mh.subs ?? [];
-      if (typeof subHeadings === "string") {
-        try { subHeadings = JSON.parse(subHeadings); }
-        catch { subHeadings = subHeadings.split(",").map(s => s.trim()); }
-      }
+
+      const rawHeading = mh.heading ?? mh.headingName ?? mh.title ?? "Untitled";
+      let subHeadings = mh.subHeadings ?? mh.subs ?? mh.children ?? [];
+      subHeadings = parseIfString(subHeadings);
       if (!Array.isArray(subHeadings)) subHeadings = [];
-      subHeadings = subHeadings.map(s => String(s));
-      return { heading: String(heading), subHeadings };
+
+      // ensure subHeadings are strings
+      subHeadings = subHeadings.map((s) => (s === null || s === undefined ? "" : String(s).trim())).filter(Boolean);
+
+      return { heading: String(rawHeading).trim() || "Untitled", subHeadings };
     });
 
-    const date = moment().format("YYYY-MM-DD");
+    // Sanitize simple fields
+    courseName = String(courseName).trim();
+    courseDescription = String(courseDescription).trim();
+    courseCategory = String(courseCategory).trim();
+    coursedemovideolink = String(coursedemovideolink).trim();
+    duration = String(duration).trim();
+    courseImage = String(courseImage).trim();
 
-    // Build the newCourse object WITHOUT courseContent and courseSubContent
+    // Ensure numeric price
+    const parsedPrice = Number(coursePrice);
+    coursePrice = Number.isFinite(parsedPrice) ? parsedPrice : 0;
+
+    // Example quick validation
+    if (!courseName) {
+      return res.status(400).json({ status: 400, message: "courseName is required." });
+    }
+
+    const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+    // Build the new course document
     const newCourse = new CourseModel({
       courseName,
       courseDescription,
@@ -62,6 +87,9 @@ export const CourseCreate = async (req, res) => {
       courseCategory,
       coursedemovideolink,
       date,
+      // optional defaults if your schema has these fields:
+      // courseContent: [],
+      // courseSubContent: []
     });
 
     const savedCourse = await newCourse.save();
@@ -71,13 +99,12 @@ export const CourseCreate = async (req, res) => {
       message: "Course created successfully.",
       data: savedCourse,
     });
-
   } catch (error) {
     console.error("Error creating course:", error);
     return res.status(500).json({
       status: 500,
       message: "Internal server error. Could not create the course.",
-      error: error.message,
+      error: error?.message ?? String(error),
     });
   }
 };
