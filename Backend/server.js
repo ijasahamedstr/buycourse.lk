@@ -22,7 +22,7 @@ app.use(
   cors({
     origin: [
       "https://buycourse-lk.vercel.app",
-      "http://localhost:3001"
+      "https://buycourse-server.vercel.app"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
