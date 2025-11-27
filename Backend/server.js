@@ -8,8 +8,7 @@ import requestservices from "./routes/requestservices.router.js";
 import AccountAdminloginrouter from './routes/AccountLogin.route.js';
 import AccountAdminrouter from "./routes/AccountRegisterAdmin.route.js";
 import Slidersection from "./routes/slidersection.route.js";
-import coursesyllabussection from "./routes/coursesyllabus.route.js";
-
+// import CourseSection from "./routes/coures.route.js";
 
 // Create an instance of Express
 const app = express();
@@ -24,7 +23,7 @@ app.use(
   cors({
     origin: [
       "https://buycourse-lk.vercel.app",
-      "https://buycourse-server.vercel.app"
+      "http://localhost:3001"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
@@ -45,7 +44,7 @@ app.use('/requestservices',requestservices);
 app.use('/Adminlogin', AccountAdminloginrouter);
 app.use('/Adminregister',AccountAdminrouter);
 app.use('/slidersection',Slidersection);
-app.use('/coursesyllabus',coursesyllabussection);
+// app.use('/Coures',CourseSection);
 
 
 // Start server
