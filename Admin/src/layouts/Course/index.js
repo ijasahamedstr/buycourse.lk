@@ -7,7 +7,6 @@ import CardActions from "@mui/material/CardActions";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
-import Avatar from "@mui/material/Avatar";
 import IconButton from "@mui/material/IconButton";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -68,10 +67,17 @@ function CourseCard({ course, onDelete, deletingId }) {
       <Box sx={{ position: "relative" }}>
         <CardMedia
           component="img"
-          height="140"
+          height={160}
           image={course.courseImage || DEFAULT_IMAGE}
           alt={course.courseName || "Course image"}
-          sx={{ objectFit: "cover" }}
+          sx={{
+            width: 350,
+            height: 160,
+            objectFit: "contain", // show full image without cropping
+            backgroundColor: "#fafafa",
+            borderBottom: "1px solid rgba(0,0,0,0.04)",
+            padding: 1,
+          }}
         />
       </Box>
 
@@ -115,7 +121,7 @@ function CourseCard({ course, onDelete, deletingId }) {
         <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1, flexWrap: "wrap" }}>
           <MetaChip
             label="Price"
-            value={course.coursePrice != null ? `₹ ${course.coursePrice}` : "Free"}
+            value={course.coursePrice != null ? `LKR ${course.coursePrice}` : "Free"}
           />
           <MetaChip label="Duration" value={course.duration || "—"} />
           <MetaChip label="Category" value={course.courseCategory || "—"} />
@@ -124,17 +130,7 @@ function CourseCard({ course, onDelete, deletingId }) {
 
       <CardActions sx={{ p: 2, pt: 0, justifyContent: "space-between", alignItems: "center" }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Avatar sx={{ width: 28, height: 28, bgcolor: "primary.light", fontSize: 12 }}>
-            {course.instructor?.name?.[0] || "P"}
-          </Avatar>
-          <Box>
-            <Typography variant="caption" sx={{ display: "block", fontWeight: 600 }}>
-              {course.instructor?.name || "Prof. Unknown"}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {course.students ? `${course.students} students` : "— students"}
-            </Typography>
-          </Box>
+          <Box />
         </Box>
 
         <Box sx={{ display: "flex", gap: 1 }}>
@@ -178,7 +174,7 @@ export default function CourseGridView() {
   // Deleting indicator
   const [deletingId, setDeletingId] = useState(null);
 
-  // Use a single endpoint constant to keep spelling consistent
+  // Use a single endpoint constant (fix typo to "Courses")
   const COURSES_ENDPOINT = `${apiBase}/Coures`;
 
   useEffect(() => {
@@ -303,26 +299,14 @@ export default function CourseGridView() {
           <MDTypography variant="h6">Courses</MDTypography>
 
           <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-            <FormControl size="small" sx={{ minWidth: 100 }}>
-              <InputLabel id="rows-per-page-label">Rows</InputLabel>
-              <Select
-                labelId="rows-per-page-label"
-                value={rowsPerPage}
-                label="Rows"
-                onChange={handleRowsPerPageChange}
-              >
-                <MenuItem value={4}>4</MenuItem>
-                <MenuItem value={8}>8</MenuItem>
-                <MenuItem value={12}>12</MenuItem>
-                <MenuItem value={16}>16</MenuItem>
-              </Select>
-            </FormControl>
-
-            <Link to="/Addcoures" style={{ textDecoration: "none" }}>
+            <Link to="/AddCourse" style={{ textDecoration: "none" }}>
               <Button variant="contained" startIcon={<AddIcon />}>
                 Add Course
               </Button>
             </Link>
+
+            {/* optional: rows per page control */}
+            <FormControl size="small" sx={{ minWidth: 120 }}></FormControl>
           </Box>
         </MDBox>
 
