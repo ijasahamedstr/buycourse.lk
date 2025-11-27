@@ -8,7 +8,6 @@ import requestservices from "./routes/requestservices.router.js";
 import AccountAdminloginrouter from './routes/AccountLogin.route.js';
 import AccountAdminrouter from "./routes/AccountRegisterAdmin.route.js";
 import Slidersection from "./routes/slidersection.route.js";
-import CourseSection from "./routes/coures.route.js";
 
 // Create an instance of Express
 const app = express();
@@ -44,7 +43,6 @@ app.use('/requestservices',requestservices);
 app.use('/Adminlogin', AccountAdminloginrouter);
 app.use('/Adminregister',AccountAdminrouter);
 app.use('/slidersection',Slidersection);
-app.use('/Coures',CourseSection);
 
 
 // Start server
