@@ -2,8 +2,6 @@ import moment from "moment";
 import CourseModel from "../models/Course.models.js";
 
 // controller/Course.Controller.js
-import moment from "moment";
-import CourseModel from "../models/Course.models.js";
 
 export const CourseCreate = async (req, res) => {
   const {
