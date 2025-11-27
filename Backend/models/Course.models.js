@@ -1,61 +1,30 @@
 import mongoose from "mongoose";
-
 const { Schema } = mongoose;
 
-const CourseSchema = new Schema(
-  {
-    courseName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    courseDescription: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-    coursePrice: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-    duration: {
-      // e.g. "8 weeks", "3 months", or a number of hours
-      type: String,
-      trim: true,
-      default: "",
-    },
-    courseImage: {
-      type: String, // URL to image
-      trim: true,
-      default: "",
-    },
-    courseContent: {
-      // main sections / topics of the course
-      type: [String],
-      default: [],
-    },
-    courseSubContent: {
-      // more granular items under each main content topic
-      type: [String],
-      default: [],
-    },
-    courseCategory: {
-      type: String,
-      trim: true,
-      required: true,
-    },
-    // optional human-readable date field (kept for parity with your slider model)
-    date: {
-      type: Date,
-      default: Date.now,
-    },
+const MainHeadingSchema = new Schema({
+  heading: { type: String, required: true },
+  subHeadings: { type: [String], default: [] } // array of strings
+}, { _id: false }); // optional: disable _id on subdocs if you want
+
+const CourseSchema = new Schema({
+  courseName: String,
+  courseDescription: String,
+  coursePrice: Number,
+  duration: String,
+  courseImage: String,
+
+  // array of subdocuments { heading, subHeadings }
+  mainHeadings: {
+    type: [MainHeadingSchema],
+    default: [],
   },
-  {
-    timestamps: true, // adds createdAt and updatedAt
-  }
-);
+
+  courseCategory: String,
+  coursedemovideolink: String,
+  date: String,
+}, {
+  timestamps: true
+});
 
 const CourseModel = mongoose.model("Course", CourseSchema);
-
 export default CourseModel;

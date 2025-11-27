@@ -2,58 +2,87 @@ import moment from "moment";
 import CourseModel from "../models/Course.models.js";
 
 
-// Create a new course
 export const CourseCreate = async (req, res) => {
-  const {
-    courseName,
-    courseDescription,
-    coursePrice,
-    duration,
-    courseImage,
-    courseContent,
-    courseSubContent,
-    courseCategory,
-  } = req.body;
-
-  // Basic input validation (adjust required fields as needed)
-  if (!courseName || !courseCategory || !coursePrice) {
-    return res.status(400).json({
-      status: 400,
-      message: "Please provide courseName, courseCategory and coursePrice.",
-    });
-  }
-
   try {
+    console.log("Incoming:", req.body);
+
+    // destructure only the fields you want to use
+    let {
+      courseName,
+      courseDescription,
+      coursePrice,
+      duration,
+      courseImage,
+      mainHeadings,
+      courseCategory,
+      coursedemovideolink,
+    } = req.body;
+
+    // Helper: try to parse JSON strings, otherwise keep value
+    const parseIfString = (val) => {
+      if (typeof val === "string") {
+        try {
+          return JSON.parse(val);
+        } catch (err) {
+          if (val.includes(",")) return val.split(",").map((s) => s.trim());
+          return val;
+        }
+      }
+      return val;
+    };
+
+    // Only parse/normalize mainHeadings (we're intentionally NOT handling courseContent/courseSubContent)
+    mainHeadings = parseIfString(mainHeadings);
+    if (!Array.isArray(mainHeadings)) mainHeadings = [];
+
+    mainHeadings = mainHeadings.map((mh) => {
+      if (typeof mh === "string") {
+        return { heading: mh, subHeadings: [] };
+      }
+      const heading = mh.heading ?? mh.headingName ?? "Untitled";
+      let subHeadings = mh.subHeadings ?? mh.subs ?? [];
+      if (typeof subHeadings === "string") {
+        try { subHeadings = JSON.parse(subHeadings); }
+        catch { subHeadings = subHeadings.split(",").map(s => s.trim()); }
+      }
+      if (!Array.isArray(subHeadings)) subHeadings = [];
+      subHeadings = subHeadings.map(s => String(s));
+      return { heading: String(heading), subHeadings };
+    });
+
     const date = moment().format("YYYY-MM-DD");
 
+    // Build the newCourse object WITHOUT courseContent and courseSubContent
     const newCourse = new CourseModel({
       courseName,
       courseDescription,
       coursePrice,
       duration,
       courseImage,
-      courseContent,
-      courseSubContent,
+      mainHeadings,
       courseCategory,
+      coursedemovideolink,
       date,
     });
 
     const savedCourse = await newCourse.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       status: 201,
       message: "Course created successfully.",
       data: savedCourse,
     });
+
   } catch (error) {
     console.error("Error creating course:", error);
-    res.status(500).json({
+    return res.status(500).json({
       status: 500,
       message: "Internal server error. Could not create the course.",
       error: error.message,
     });
   }
 };
+
 
 // Get all courses
 export const CourseIndex = async (req, res) => {

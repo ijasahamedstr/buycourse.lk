@@ -299,7 +299,7 @@ export default function CourseGridView() {
           <MDTypography variant="h6">Courses</MDTypography>
 
           <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-            <Link to="/AddCourse" style={{ textDecoration: "none" }}>
+            <Link to="/Addcoures" style={{ textDecoration: "none" }}>
               <Button variant="contained" startIcon={<AddIcon />}>
                 Add Course
               </Button>

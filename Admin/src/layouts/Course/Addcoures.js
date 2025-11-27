@@ -32,8 +32,8 @@ export default function AddCourse() {
     coursePrice: "",
     duration: "",
     courseImage: "",
+    coursedemovideolink: "", // <-- NEW FIELD
     mainHeadings: [], // array of strings (Main Headings)
-    // subHeadingsMap holds arrays keyed by main heading title
     subHeadingsMap: {}, // { [mainHeading]: [sub1, sub2, ...] }
     courseCategory: "",
   });
@@ -104,10 +104,12 @@ export default function AddCourse() {
     setCourse((prev) => {
       const current = prev.subHeadingsMap[main] || [];
       if (current.includes(trimmed)) {
-        return {
-          ...prev,
-          // set error by side-effect after setCourse
-        };
+        // set a visible error
+        setErrors((prevErr) => ({
+          ...prevErr,
+          subHeadingInput: "This sub-heading already exists.",
+        }));
+        return prev; // no change
       }
       return {
         ...prev,
@@ -138,6 +140,7 @@ export default function AddCourse() {
       newErrors.coursePrice = "Price is required.";
     else if (Number.isNaN(Number(course.coursePrice)))
       newErrors.coursePrice = "Price must be a number.";
+
     if (course.courseImage) {
       try {
         const u = new URL(course.courseImage);
@@ -147,8 +150,19 @@ export default function AddCourse() {
         newErrors.courseImage = "Main image must be a valid URL.";
       }
     }
-    // optional: ensure at least one main heading exists
+
+    // optional: validate demo video link if present (basic URL check)
+    if (course.coursedemovideolink) {
+      try {
+        new URL(course.coursedemovideolink);
+      } catch {
+        newErrors.coursedemovideolink = "Demo video link must be a valid URL.";
+      }
+    }
+
+    // ensure at least one main heading exists
     if (course.mainHeadings.length === 0) newErrors.mainHeadings = "Add at least one main heading.";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -180,6 +194,7 @@ export default function AddCourse() {
         coursePrice: Number(course.coursePrice),
         duration: course.duration,
         courseImage: course.courseImage,
+        coursedemovideolink: course.coursedemovideolink, // <-- included
         courseCategory: course.courseCategory,
         mainHeadings: structuredHeadings,
       };
@@ -206,6 +221,7 @@ export default function AddCourse() {
           coursePrice: "",
           duration: "",
           courseImage: "",
+          coursedemovideolink: "", // <-- reset
           mainHeadings: [],
           subHeadingsMap: {},
           courseCategory: "",
@@ -321,8 +337,21 @@ export default function AddCourse() {
                     }
                   />
 
+                  {/* NEW: Course Demo Video Link */}
+                  <TextField
+                    label="Course Demo Video Link (optional)"
+                    variant="outlined"
+                    fullWidth
+                    sx={{ mb: 2 }}
+                    name="coursedemovideolink"
+                    value={course.coursedemovideolink}
+                    onChange={handleChange}
+                    error={Boolean(errors.coursedemovideolink)}
+                    helperText={errors.coursedemovideolink || "Paste YouTube or any video link."}
+                  />
+
                   {/* Category select */}
-                  <FormControl fullWidth sx={{ mb: 1, height: "40px" }}>
+                  <FormControl fullWidth sx={{ mb: 2, height: "40px" }}>
                     <InputLabel id="course-category-label">Course Category</InputLabel>
                     <Select
                       labelId="course-category-label"
@@ -330,6 +359,11 @@ export default function AddCourse() {
                       name="courseCategory"
                       value={course.courseCategory}
                       onChange={handleChange}
+                      sx={{
+                        height: 55, // <-- Increase height
+                        display: "flex",
+                        alignItems: "center",
+                      }}
                     >
                       <MenuItem value="Tamil">Tamil</MenuItem>
                       <MenuItem value="English">English</MenuItem>
@@ -392,6 +426,7 @@ export default function AddCourse() {
                       variant="outlined"
                       startIcon={<AddIcon />}
                       onClick={handleAddMainHeading}
+                      style={{ color: "black" }}
                     >
                       Add
                     </Button>
@@ -454,6 +489,11 @@ export default function AddCourse() {
                           labelId="select-main-heading-label"
                           label="Main Heading"
                           value={selectedMainHeading}
+                          sx={{
+                            height: 40, // <-- Increase height
+                            display: "flex",
+                            alignItems: "center",
+                          }}
                           onChange={(e) => {
                             setSelectedMainHeading(e.target.value);
                             setErrors((prev) => ({ ...prev, selectedMainHeading: "" }));
@@ -504,6 +544,7 @@ export default function AddCourse() {
                         startIcon={<AddIcon />}
                         onClick={handleAddSubHeading}
                         fullWidth
+                        style={{ color: "black" }}
                       >
                         Add
                       </Button>
