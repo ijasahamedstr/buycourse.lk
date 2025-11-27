@@ -31,7 +31,7 @@ export const CourseCreate = async (req, res) => {
       return val;
     };
 
-    // Only parse/normalize mainHeadings (we're intentionally NOT handling courseContent/courseSubContent)
+
     mainHeadings = parseIfString(mainHeadings);
     if (!Array.isArray(mainHeadings)) mainHeadings = [];
 
