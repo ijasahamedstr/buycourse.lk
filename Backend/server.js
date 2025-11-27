@@ -7,6 +7,7 @@ import AccountAdminloginrouter from './routes/AccountLogin.route.js';
 import AccountAdminrouter from "./routes/AccountRegisterAdmin.route.js";
 import Inquirysection from "./routes/Inquiry.route.js";
 import Requestservices from "./routes/Requestservices.route.js";
+import Slidersection from "./routes/Slidersection.route.js";
 
 // Create an instance of Express
 const app = express();
@@ -41,6 +42,7 @@ app.use('/Adminlogin', AccountAdminloginrouter);
 app.use('/Adminregister',AccountAdminrouter);
 app.use('/Inquiry',Inquirysection);
 app.use('/Requestservices',Requestservices);
+app.use('/Slidersection',Slidersection);
 
 
 // Start server
