@@ -7,6 +7,7 @@ import TamilCourses from './Page/tamil-courses';
 import SinhalaCourses from './Page/sinhala-courses';
 import EnglishCourses from './Page/English-courses';
 import PremiumAccountService from './Page/PremiumAccountService';
+import CoursePage from './Page/Couresview';
 
 function App() {
 
@@ -21,6 +22,7 @@ function App() {
         <Route path="/sinhala-courses" element={<SinhalaCourses/>} />
         <Route path="/english-courses" element={<EnglishCourses/>} />
         <Route path="/premium-account-service" element={<PremiumAccountService/>} />
+        <Route path="/course/:slug" element={<CoursePage />} />
         {/* Add routes for settings if needed */}
       </Routes>
       <Footer/>

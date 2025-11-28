@@ -1,7 +1,9 @@
+// Programmes.tsx
 import React, { useEffect, useState } from "react";
 import { Box, Container, Typography, Button } from "@mui/material";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
+import { useNavigate } from "react-router-dom";
 
 // Swiper CSS (import once per app or per component)
 import "swiper/css";
@@ -20,16 +22,86 @@ type Course = {
 
 // sample course data — ensure ids are unique in your real data
 const courses: Course[] = [
-  { id: "tamil-101", title: "Tamil Language — Beginner", instructor: "Prof. Ananda", price: "LKR 3,499", duration: "3 months", image: "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1600&q=80", description: "Start speaking Tamil confidently.", category: "tamil" },
-  { id: "tamil-advanced", title: "Tamil Conversation — Intermediate", instructor: "Ms. Kavya", price: "LKR 4,499", duration: "3 months", image: "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=1600&q=80", description: "Practice real-life Tamil conversations.", category: "tamil" },
+  {
+    id: "tamil-101",
+    title: "Tamil Language — Beginner",
+    instructor: "Prof. Ananda",
+    price: "LKR 3,499",
+    duration: "3 months",
+    image:
+      "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1600&q=80",
+    description: "Start speaking Tamil confidently.",
+    category: "tamil",
+  },
+  {
+    id: "tamil-advanced",
+    title: "Tamil Conversation — Intermediate",
+    instructor: "Ms. Kavya",
+    price: "LKR 4,499",
+    duration: "3 months",
+    image:
+      "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=1600&q=80",
+    description: "Practice real-life Tamil conversations.",
+    category: "tamil",
+  },
 
-  { id: "sinhala-101", title: "Sinhala Essentials", instructor: "Dr. Malini", price: "LKR 3,499", duration: "3 months", image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1600&q=80", description: "Essential Sinhala for beginners.", category: "sinhala" },
-  { id: "sinhala-convo", title: "Sinhala Conversation", instructor: "Ms. Nadeesha", price: "LKR 3,999", duration: "3 months", image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1600&q=80", description: "Interactive Sinhala classes.", category: "sinhala" },
+  {
+    id: "sinhala-101",
+    title: "Sinhala Essentials",
+    instructor: "Dr. Malini",
+    price: "LKR 3,499",
+    duration: "3 months",
+    image:
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1600&q=80",
+    description: "Essential Sinhala for beginners.",
+    category: "sinhala",
+  },
+  {
+    id: "sinhala-convo",
+    title: "Sinhala Conversation",
+    instructor: "Ms. Nadeesha",
+    price: "LKR 3,999",
+    duration: "3 months",
+    image:
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1600&q=80",
+    description: "Interactive Sinhala classes.",
+    category: "sinhala",
+  },
 
-  { id: "english-communication", title: "English Communication Mastery", instructor: "Ms. Sarah Johnson", price: "LKR 4,999", duration: "4 months", image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1600&q=80", description: "Improve speaking and writing skills.", category: "english" },
-  { id: "english-business", title: "Business English", instructor: "Mr. Arjun", price: "LKR 5,499", duration: "4 months", image: "https://images.unsplash.com/photo-1557800636-894a64c1696f?auto=format&fit=crop&w=1600&q=80", description: "Professional English for meetings.", category: "english" },
+  {
+    id: "english-communication",
+    title: "English Communication Mastery",
+    instructor: "Ms. Sarah Johnson",
+    price: "LKR 4,999",
+    duration: "4 months",
+    image:
+      "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1600&q=80",
+    description: "Improve speaking and writing skills.",
+    category: "english",
+  },
+  {
+    id: "english-business",
+    title: "Business English",
+    instructor: "Mr. Arjun",
+    price: "LKR 5,499",
+    duration: "4 months",
+    image:
+      "https://images.unsplash.com/photo-1557800636-894a64c1696f?auto=format&fit=crop&w=1600&q=80",
+    description: "Professional English for meetings.",
+    category: "english",
+  },
 
-  { id: "premium-account", title: "Premium Account Service", instructor: "Support Team", price: "LKR 12,999 / year", duration: "12 months", image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1600&q=80", description: "Premium access & mentoring.", category: "other" },
+  {
+    id: "premium-account",
+    title: "Premium Account Service",
+    instructor: "Support Team",
+    price: "LKR 12,999 / year",
+    duration: "12 months",
+    image:
+      "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1600&q=80",
+    description: "Premium access & mentoring.",
+    category: "other",
+  },
 ];
 
 // safe slugify
@@ -50,6 +122,7 @@ const englishCourses = courses.filter((c) => c.category === "english");
 
 const Programmes: React.FC = () => {
   const [mounted, setMounted] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // mark mounted so Swiper renders client-side
@@ -62,6 +135,7 @@ const Programmes: React.FC = () => {
         try {
           const mod = await import("rellax");
           const Rellax = mod?.default || mod;
+          // create and keep instance local
           rellaxInstance = new Rellax(".rellax", { speed: -2 });
         } catch (err) {
           // Rellax not installed or failed — no-op
@@ -70,26 +144,51 @@ const Programmes: React.FC = () => {
     }
 
     return () => {
-      if (rellaxInstance && typeof rellaxInstance.destroy === "function") rellaxInstance.destroy();
+      if (rellaxInstance && typeof rellaxInstance.destroy === "function") {
+        rellaxInstance.destroy();
+        rellaxInstance = null;
+      }
     };
   }, []);
 
   const handleSlideClick = (course: Course) => {
     const slug = slugify(course.id || course.title);
-    const target = `/course/${slug}`;
-    if (typeof window !== "undefined") window.location.href = target;
+    navigate(`/course/${slug}`);
   };
 
   const renderSection = (title: string, list: Course[], viewMorePath: string) => {
     if (!list.length) return null;
     return (
       <Box sx={{ mb: 6 }}>
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2, gap: 2, flexWrap: "wrap" }}>
-          <Typography variant="h5" sx={{ fontWeight: 700, color: "#0a5397", fontFamily: "'Montserrat', sans-serif" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 2,
+            gap: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          <Typography
+            variant="h5"
+            sx={{ fontWeight: 700, color: "#0a5397", fontFamily: "'Montserrat', sans-serif" }}
+          >
             {title}
           </Typography>
 
-          <Typography component="a" href={viewMorePath} sx={{ color: "#0a5397", fontWeight: 700, textDecoration: "none", "&:hover": { textDecoration: "underline" }, fontFamily: "'Montserrat', sans-serif", fontSize: "0.95rem" }}>
+          <Typography
+            component="a"
+            href={viewMorePath}
+            sx={{
+              color: "#0a5397",
+              fontWeight: 700,
+              textDecoration: "none",
+              "&:hover": { textDecoration: "underline" },
+              fontFamily: "'Montserrat', sans-serif",
+              fontSize: "0.95rem",
+            }}
+          >
             View more courses →
           </Typography>
         </Box>
@@ -155,7 +254,6 @@ const Programmes: React.FC = () => {
                         mt: 2,
                         position: "relative",
                         boxShadow: 2,
-                        // container for background layer
                         "& .image-bg": {
                           position: "absolute",
                           inset: 0,
@@ -165,7 +263,6 @@ const Programmes: React.FC = () => {
                           backgroundPosition: "center",
                           transition: "transform 0.6s ease, filter 0.4s ease",
                         },
-                        // hover zoom
                         "&:hover .image-bg": {
                           transform: "scale(1.08)",
                           filter: "brightness(0.96)",
@@ -174,7 +271,20 @@ const Programmes: React.FC = () => {
                     >
                       <Box className="image-bg" />
                       {/* duration badge */}
-                      <Box sx={{ position: "absolute", top: 10, left: 10, backgroundColor: "rgba(255,255,255,0.95)", color: "#0a5397", px: 1.5, py: 0.35, borderRadius: 1, fontWeight: 700, fontSize: "0.75rem" }}>
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: 10,
+                          left: 10,
+                          backgroundColor: "rgba(255,255,255,0.95)",
+                          color: "#0a5397",
+                          px: 1.5,
+                          py: 0.35,
+                          borderRadius: 1,
+                          fontWeight: 700,
+                          fontSize: "0.75rem",
+                        }}
+                      >
                         {course.duration}
                       </Box>
                     </Box>
@@ -228,9 +338,17 @@ const Programmes: React.FC = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           const slug = slugify(course.id || course.title);
-                          window.location.href = `/course/${slug}/enroll`;
+                          navigate(`/course/${slug}/enroll`);
                         }}
-                        sx={{ backgroundColor: "#fff", color: "#0a5397", fontWeight: 700, borderRadius: 2, px: 3, py: 1, "&:hover": { backgroundColor: "#f3f3f3" } }}
+                        sx={{
+                          backgroundColor: "#fff",
+                          color: "#0a5397",
+                          fontWeight: 700,
+                          borderRadius: 2,
+                          px: 3,
+                          py: 1,
+                          "&:hover": { backgroundColor: "#f3f3f3" },
+                        }}
                       >
                         Enroll
                       </Button>
@@ -240,9 +358,16 @@ const Programmes: React.FC = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           const slug = slugify(course.id || course.title);
-                          window.location.href = `/course/${slug}`;
+                          navigate(`/course/${slug}`);
                         }}
-                        sx={{ borderColor: "rgba(255,255,255,0.3)", color: "#fff", fontWeight: 600, borderRadius: 2, px: 3, py: 1 }}
+                        sx={{
+                          borderColor: "rgba(255,255,255,0.3)",
+                          color: "#fff",
+                          fontWeight: 600,
+                          borderRadius: 2,
+                          px: 3,
+                          py: 1,
+                        }}
                       >
                         View
                       </Button>
@@ -260,19 +385,34 @@ const Programmes: React.FC = () => {
   return (
     <Box sx={{ backgroundColor: "#f9fbff", py: { xs: 6, md: 10 }, position: "relative", overflow: "hidden" }}>
       {/* Parallax Soft Blue Circle */}
-      <Box className="rellax" data-rellax-speed="-2" sx={{ position: "absolute", top: -120, left: -120, width: 420, height: 420, borderRadius: "50%", backgroundColor: "#cce4ff", zIndex: 0 }} />
+      <Box
+        className="rellax"
+        data-rellax-speed="-2"
+        sx={{ position: "absolute", top: -120, left: -120, width: 420, height: 420, borderRadius: "50%", backgroundColor: "#cce4ff", zIndex: 0 }}
+      />
 
       <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
-        <Typography variant="h6" align="center" sx={{ color: "text.secondary", mb: 1, fontWeight: 500, fontFamily: "'Montserrat', sans-serif", textTransform: "uppercase", letterSpacing: 1 }}>
+        <Typography
+          variant="h6"
+          align="center"
+          sx={{
+            color: "text.secondary",
+            mb: 1,
+            fontWeight: 500,
+            fontFamily: "'Montserrat', sans-serif",
+            textTransform: "uppercase",
+            letterSpacing: 1,
+          }}
+        >
           Programs
         </Typography>
         <Typography variant="h4" align="center" sx={{ fontWeight: 700, mb: 6, color: "#0a5397", fontFamily: "'Montserrat', sans-serif" }}>
           Popular Courses
         </Typography>
 
-        {renderSection("Tamil Courses", tamilCourses, "/courses/tamil")}
+        {renderSection("Tamil Courses", tamilCourses, "/tamil-courses")}
         {renderSection("Sinhala Courses", sinhalaCourses, "/courses/sinhala")}
-        {renderSection("English Courses", englishCourses, "/courses/english")}
+        {renderSection("English Courses", englishCourses, "/english-courses")}
       </Container>
     </Box>
   );

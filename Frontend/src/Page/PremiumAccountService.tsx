@@ -31,29 +31,65 @@ const formatPrice = (price: number) =>
   `LKR ${price.toLocaleString("en-LK", { minimumFractionDigits: 2 })}`;
 
 interface Card {
-  image: string;
+  image: string;      // background image (large)
+  original?: string;  // original service image (thumbnail, optional)
   title?: string;
   desc?: string;
 }
 
-// categories as requested (image placeholders kept); titles will be shown on each card
 const cards: Card[] = [
-  { image: "https://via.placeholder.com/497x225.png?text=digital-keys", title: "Digital Keys", desc: "License keys & top-ups" },
-  { image: "https://via.placeholder.com/497x225.png?text=games", title: "Games", desc: "Top game codes & bundles" },
-  { image: "https://via.placeholder.com/497x225.png?text=ott", title: "OTT", desc: "Streaming services" },
-  { image: "https://via.placeholder.com/497x225.png?text=premium", title: "Premium", desc: "Premium plans & upgrades" },
-  { image: "https://via.placeholder.com/497x225.png?text=streaming-combos", title: "Streaming Combos", desc: "Combo subscriptions" },
-  { image: "https://via.placeholder.com/497x225.png?text=utilities", title: "Utilities", desc: "Useful tools & apps" },
-  { image: "https://via.placeholder.com/497x225.png?text=vpn", title: "VPN", desc: "Secure VPN plans" },
+  {
+    image: "https://via.placeholder.com/497x225.png?text=digital-keys",
+    original: servicesData.find(s => s.id === "altbalaji-premium")?.image,
+    title: "Digital Keys",
+    desc: "License keys & top-ups"
+  },
+  {
+    image: "https://via.placeholder.com/497x225.png?text=games",
+    original: servicesData.find(s => s.id === "spotify-premium")?.image,
+    title: "Games",
+    desc: "Top game codes & bundles"
+  },
+  {
+    image: "https://via.placeholder.com/497x225.png?text=ott",
+    original: servicesData.find(s => s.id === "netflix-4k")?.image,
+    title: "OTT",
+    desc: "Streaming services"
+  },
+  {
+    image: "https://via.placeholder.com/497x225.png?text=premium",
+    original: servicesData.find(s => s.id === "youtube-premium-in")?.image,
+    title: "Premium",
+    desc: "Premium plans & upgrades"
+  },
+  {
+    image: "https://via.placeholder.com/497x225.png?text=streaming-combos",
+    original: servicesData.find(s => s.id === "amazon-prime-video")?.image,
+    title: "Streaming Combos",
+    desc: "Combo subscriptions"
+  },
+  {
+    image: "https://via.placeholder.com/497x225.png?text=utilities",
+    original: undefined,
+    title: "Utilities",
+    desc: "Useful tools & apps"
+  },
+  {
+    image: "https://via.placeholder.com/497x225.png?text=vpn",
+    original: servicesData.find(s => s.id === "hma-vpn")?.image,
+    title: "VPN",
+    desc: "Secure VPN plans"
+  },
 ];
 
 export default function PremiumSimpleHero() {
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
+    // Changed from 4000 => 10000 (10 seconds)
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % heroSlides.length);
-    }, 4000);
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -81,7 +117,7 @@ export default function PremiumSimpleHero() {
 
   // ---------- Styles for campus slider and heading ----------
   const containerStyle: React.CSSProperties = {
-    padding: "60px 5% 0 5%",
+    padding: "60px 8% 0 8%",
   };
 
   const sliderWrapperStyle: React.CSSProperties = {
@@ -96,14 +132,18 @@ export default function PremiumSimpleHero() {
     paddingBottom: 0,
   };
 
-  // slightly smaller card sizing
+  // ---------- UNIFORM CARD SIZE (fixed) ----------
+  const CARD_WIDTH = 260; // px
+  const CARD_HEIGHT = 150; // px
+
   const cardStyle = (image: string): React.CSSProperties => ({
-    flex: "0 0 clamp(140px, 20%, 260px)",
-    aspectRatio: "497/225",
+    flex: `0 0 ${CARD_WIDTH}px`,
+    width: `${CARD_WIDTH}px`,
+    height: `${CARD_HEIGHT}px`,
     backgroundImage: `url(${image})`,
     backgroundSize: "cover",
     backgroundPosition: "center",
-    borderRadius: "16px",
+    borderRadius: "12px",
     cursor: "pointer",
     display: "flex",
     flexDirection: "column",
@@ -112,6 +152,7 @@ export default function PremiumSimpleHero() {
     transition: "transform 0.28s ease, box-shadow 0.28s ease",
     position: "relative",
     overflow: "hidden",
+    backgroundColor: "#F1F5F9", // fallback background requested
   });
 
   const buttonStyle: React.CSSProperties = {
@@ -120,7 +161,7 @@ export default function PremiumSimpleHero() {
     left: "12px",
     padding: "7px 14px",
     backgroundColor: "#ffffff",
-    color: "rgb(0, 84, 248)",
+    color: "rgb(0, 0, 0)", // black text
     border: "none",
     borderRadius: "40px",
     cursor: "pointer",
@@ -132,40 +173,79 @@ export default function PremiumSimpleHero() {
     transition: "background 0.25s, color 0.25s",
   };
 
+  // VIEW button style for All-Accounts (positioned inside bottom-right of meta)
+  const acctButtonStyle: React.CSSProperties = {
+    position: "absolute",
+    bottom: "12px",
+    right: "12px",
+    padding: "7px 12px",
+    backgroundColor: "#ffffff",
+    color: "rgb(0,0,0)",
+    border: "none",
+    borderRadius: "32px",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: "13px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  };
+
   const arrowStyle: React.CSSProperties = {
     fontSize: "16px",
     display: "inline-block",
     transition: "transform 0.25s",
   };
 
-  // ---------- CSS (added overlay/title styles) ----------
+  const originalThumbStyle: React.CSSProperties = {
+    position: "absolute",
+    bottom: "12px",
+    right: "12px",
+    width: "56px",
+    height: "56px",
+    borderRadius: "8px",
+    overflow: "hidden",
+    border: "2px solid rgba(0,0,0,0.08)",
+    background: "#fff",
+    zIndex: 30,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+
   const css = `
+    :root {
+      --layout-max-width: 1400px; /* LG container size */
+      --card-bg: #F1F5F9; /* requested background for data cards */
+    }
+
     body, .page-wrap {
       font-family: "Montserrat", sans-serif !important;
+      color: #000 !important; /* force black text */
     }
 
     .page-wrap {
       padding: 48px 5%;
       background: #ffffff;
       min-height: 100vh;
-      color: #111;
+      color: #000;
     }
 
     .layout {
-      max-width: 1180px;
+      max-width: var(--layout-max-width);
       margin: 0 auto;
       display: grid;
-      grid-template-columns: 1fr 320px;
-      gap: 26px;
+      grid-template-columns: 1fr 360px; /* wider sidebar for LG */
+      gap: 28px;
     }
 
-    /* HERO SECTION */
     .hero-slider {
       position: relative;
-      height: 520px;
+      height: 620px; /* slightly larger for LG */
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 8px 26px rgba(0,0,0,0.15);
+      background: var(--card-bg);
     }
 
     .slide {
@@ -184,7 +264,7 @@ export default function PremiumSimpleHero() {
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.08), rgba(0,0,0,0.55));
+      background: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.10));
       z-index: 5;
     }
 
@@ -193,21 +273,27 @@ export default function PremiumSimpleHero() {
       bottom: 20px;
       left: 20px;
       z-index: 20;
-      color: white;
-      text-shadow: 0 3px 12px rgba(0,0,0,0.6);
+      color: #000;
+      text-shadow: none;
+      background: rgba(255,255,255,0.92);
+      padding: 12px 16px;
+      border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.06);
     }
+
     .hero-content h3 {
       margin: 0;
       font-size: 2rem;
       font-weight: 800;
+      color: #000;
     }
     .hero-content p {
       margin-top: 6px;
       font-weight: 500;
       font-size: 1.05rem;
+      color: #000;
     }
 
-    /* DOTS */
     .dots {
       position: absolute;
       bottom: 12px;
@@ -219,23 +305,22 @@ export default function PremiumSimpleHero() {
     .dot {
       width: 10px;
       height: 10px;
-      background: #ffffff88;
+      background: #00000044;
       border-radius: 50%;
       cursor: pointer;
       border: none;
     }
     .dot.active {
-      background: #fff;
+      background: #000;
     }
 
-    /* SIDEBAR */
     .sidebar {
-      background: #ffffff;
-      border-radius: 10px;
+      background: var(--card-bg); /* servicesData card bg requested */
+      border-radius: 12px;
       padding: 18px;
       border: 1px solid #e6e6e6;
-      color: #222;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+      color: #000;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.06);
     }
 
     .sidebar h3 {
@@ -255,14 +340,17 @@ export default function PremiumSimpleHero() {
       display: flex;
       gap: 12px;
       align-items: center;
+      background: #ffffffb8;
+      padding: 8px;
+      border-radius: 8px;
     }
 
     .discount-thumb {
-      width: 56px;
-      height: 56px;
+      width: 64px;
+      height: 64px;
       border-radius: 8px;
       overflow: hidden;
-      background: #f3f3f3;
+      background: var(--card-bg); /* thumbnail background */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -273,28 +361,28 @@ export default function PremiumSimpleHero() {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      display: block;
     }
 
     .discount-meta .name {
-      font-weight: 700;
+      font-weight: 400;
       font-size: 0.92rem;
-      color: #333;
+      color: #000;
     }
 
     .discount-meta .price {
-      font-weight: 800;
-      color: #6b4de6;
+      font-weight: 400; /* normal weight for price */
+      color: #000;
       margin-top: 2px;
     }
 
-    /* CARD overlays */
     .card-title {
       position: absolute;
       left: 12px;
       top: 12px;
       padding: 6px 10px;
-      background: rgba(0,0,0,0.55);
-      color: #fff;
+      background: rgba(255,255,255,0.92);
+      color: #000;
       font-weight: 700;
       font-size: 0.9rem;
       border-radius: 999px;
@@ -309,27 +397,159 @@ export default function PremiumSimpleHero() {
       bottom: 46px;
       right: 12px;
       font-size: 0.82rem;
-      color: #ffffffcc;
-      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      color: #111;
+      text-shadow: none;
       z-index: 11;
       line-height: 1.1;
       max-height: 3em;
       overflow: hidden;
+      background: rgba(255,255,255,0.80);
+      padding: 6px 8px;
+      border-radius: 8px;
     }
 
-    @media(max-width:800px){
-      .layout { grid-template-columns: 1fr; }
-      .hero-slider { height: 300px; }
+    /* ALL ACCOUNTS grid */
+    .all-accounts {
+      margin: 36px auto 80px;
+      max-width: var(--layout-max-width);
     }
+    .all-accounts__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+    .all-accounts__title { font-size: 1.25rem; font-weight: 800; color: #000; }
+
+    /* Changed to 5 columns for desktop */
+    .all-accounts__grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 18px;
+    }
+
+    /* UPDATED: HALF-IMAGE + HALF-CONTENT styles for .account-card */
+    .account-card {
+      height: 300px;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.06);
+    }
+
+    /* TOP HALF IMAGE */
+    .account-card__img {
+      height: 50%;
+      width: 100%;
+      background-size: cover;
+      background-position: center;
+    }
+
+    /* BOTTOM HALF CONTENT */
+    .account-card__meta {
+      height: 50%;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: #fff;
+      z-index: 10;
+      position: relative; /* so the button absolute positions inside meta */
+    }
+
+    /* Non-bold, smaller text as requested */
+    .account-card__meta h4 {
+      margin: 0;
+      font-size: 1rem; /* slightly smaller */
+      font-weight: 400; /* normal weight (not bold) */
+      color: #000;
+    }
+
+    .account-card__meta p {
+      margin-top: 6px;
+      font-size: 0.92rem; /* slightly smaller */
+      font-weight: 400; /* normal weight */
+      color: #333;
+    }
+
+    /* Remove old dark overlay if present */
+    .account-card::after {
+      display: none !important;
+    }
+
+    /* Remove zoom hover */
+    .account-card:hover {
+      transform: none !important;
+      background-size: cover !important;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.06) !important;
+    }
+
+    .all-accounts__pagination {
+      display:flex; gap:8px; justify-content:center; margin-top:18px; align-items:center;
+    }
+    .page-btn {
+      border: 1px solid #e6e6e6; background: #fff; padding: 8px 12px; border-radius: 8px; cursor:pointer; font-weight:600;
+    }
+    .page-btn[aria-current="true"] { background: #000; color: #fff; border-color: #000; }
+
+    @media (max-width:1024px){ .all-accounts__grid { grid-template-columns: repeat(2, 1fr); } .layout { grid-template-columns: 1fr; } }
+    @media (max-width:560px){ .all-accounts__grid { grid-template-columns: 1fr; } .hero-slider { height: 300px; } }
   `;
 
   const fallbackImage = "/images/placeholder.svg";
 
-  // simple handler — replace with your routing or action
   const onCardView = (card: Card) => {
-    // small safe default action — you can change to navigate, open modal, etc.
     alert(`View: ${card.title ?? "item"}`);
   };
+
+  // New handler for service items (All Accounts)
+  const onServiceView = (svc: Service) => {
+    alert(`View: ${svc.title}`);
+  };
+
+  // ------------------ NEW: All Accounts (cards + pagination) ------------------
+  // Data source for "All Accounts" — using servicesData here
+  const allData = servicesData;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Changed from 5 => 10 items per page
+  const ITEMS_PER_PAGE = 10;
+  const totalPages = Math.max(1, Math.ceil(allData.length / ITEMS_PER_PAGE));
+  const paginated = allData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  const goToPage = (p: number) => {
+    if (p < 1 || p > totalPages) return;
+    setCurrentPage(p);
+    // scroll into view the all-accounts section for better UX
+    const el = document.querySelector('.all-accounts');
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // Highlight special "All-Account Card" (a summary card at the start)
+  const AllAccountSummaryCard = () => (
+    <div
+      className="account-card"
+      role="article"
+      aria-label="All accounts summary"
+      style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.06)), url('https://via.placeholder.com/900x400.png?text=All+Accounts')`, backgroundSize: 'cover', backgroundPosition: 'center', color: '#000' }}
+    >
+      <div className="account-card__meta">
+        <h4>All Accounts</h4>
+        <p>{allData.length} total plans — view & manage all subscriptions</p>
+      </div>
+      <button
+        style={{ position: 'absolute', right: 12, top: 12, background: '#fff', border: 'none', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}
+        onClick={() => goToPage(1)}
+        aria-label="View all accounts"
+      >
+        View All
+      </button>
+    </div>
+  );
 
   return (
     <div className="page-wrap">
@@ -390,7 +610,7 @@ export default function PremiumSimpleHero() {
         </aside>
       </div>
 
-      {/* ---------- Campus / Category slider (full-width) ---------- */}
+      {/* ---------- Category slider (full-width) ---------- */}
       <div style={containerStyle}>
         <div
           ref={containerRef}
@@ -411,11 +631,20 @@ export default function PremiumSimpleHero() {
               role="listitem"
               aria-label={card.title ?? `Card ${index + 1}`}
             >
-              {/* Title badge (Name) */}
               {card.title && <div className="card-title">{card.title}</div>}
-
-              {/* Optional description overlay */}
               {card.desc && <div className="card-desc">{card.desc}</div>}
+              {card.original && (
+                <div style={originalThumbStyle} aria-hidden>
+                  <img
+                    src={card.original}
+                    alt={`${card.title ?? "item"} original"`}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = fallbackImage;
+                    }}
+                  />
+                </div>
+              )}
 
               <button
                 style={buttonStyle}
@@ -436,24 +665,87 @@ export default function PremiumSimpleHero() {
             width: 80px;
             height: 4px;
             margin: 12px auto 0;
-            background: linear-gradient(90deg, #0066ff, #00cc99);
+            background: linear-gradient(90deg, #000, #000);
             border-radius: 2px;
             animation: fadeInLine 1s ease forwards;
           }
           @keyframes fadeInLine { from { width: 0; opacity: 0; } to { width: 80px; opacity: 1; } }
 
-          @media (max-width: 480px) { .campus-card { flex: 0 0 90% !important; } }
-          @media (min-width: 481px) and (max-width: 1024px) { .campus-card { flex: 0 0 48% !important; } }
-          @media (min-width: 1025px) { .campus-card { flex: 0 0 clamp(140px, 20%, 260px); } }
+          @media (max-width: 480px) { .campus-card { flex: 0 0 90% !important; width: calc(100% - 40px) !important; } }
+          @media (min-width: 481px) and (max-width: 1024px) { .campus-card { flex: 0 0 calc(50% - 12px) !important; width: calc(50% - 12px) !important; } }
+          @media (min-width: 1025px) { .campus-card { flex: 0 0 ${CARD_WIDTH}px !important; width: ${CARD_WIDTH}px !important; } }
 
           @media (hover: hover) {
             .campus-card:hover { transform: scale(1.035); box-shadow: 0 12px 26px rgba(0,0,0,0.14); }
-            .campus-card button:hover { background-color: rgb(0, 84, 248); color: #ffffff; }
+            .campus-card button:hover { background-color: #000; color: #fff; }
             .campus-card button:hover span { transform: translateX(4px); }
           }
         `}</style>
       </div>
-      {/* ---------- END ---------- */}
+
+      {/* ---------- NEW: All Accounts section (includes All-Account Card + paginated cards) ---------- */}
+      <section className="all-accounts" aria-label="All Accounts">
+        <div className="all-accounts__header">
+          <div className="all-accounts__title">All Accounts</div>
+          <div style={{ fontSize: 14, color: '#111' }}>{allData.length} results</div>
+        </div>
+
+        <div className="all-accounts__grid">
+          {/* All-Account summary card */}
+          <AllAccountSummaryCard />
+
+          {/* Paginated service cards (HALF IMAGE / HALF CONTENT) */}
+          {paginated.map((s) => (
+            <div
+              key={s.id}
+              className="account-card"
+              role="article"
+              aria-label={s.title}
+            >
+              {/* TOP HALF IMAGE */}
+              <div
+                className="account-card__img"
+                style={{ backgroundImage: `url(${s.image})` }}
+              />
+
+              {/* BOTTOM HALF CONTENT */}
+              <div className="account-card__meta">
+                <h4>{s.title}</h4>
+                <p>{formatPrice(s.discountPrice ?? s.originalPrice)}</p>
+
+                {/* VIEW button inside meta (bottom-right) */}
+                <button
+                  style={acctButtonStyle}
+                  onClick={() => onServiceView(s)}
+                  aria-label={`View ${s.title}`}
+                >
+                  View <span style={arrowStyle}>→</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="all-accounts__pagination" role="navigation" aria-label="All accounts pagination">
+          <button className="page-btn" onClick={() => goToPage(currentPage - 1)} aria-disabled={currentPage === 1} aria-label="Previous page">Prev</button>
+
+          {/* render page numbers (compact) */}
+          {Array.from({ length: totalPages }).map((_, i) => (
+            <button
+              key={i}
+              className="page-btn"
+              onClick={() => goToPage(i + 1)}
+              aria-current={currentPage === i + 1}
+              aria-label={`Go to page ${i + 1}`}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button className="page-btn" onClick={() => goToPage(currentPage + 1)} aria-disabled={currentPage === totalPages} aria-label="Next page">Next</button>
+        </div>
+      </section>
+
     </div>
   );
 }
