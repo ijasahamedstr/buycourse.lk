@@ -12,6 +12,8 @@ import RequestServicesView from "layouts/Request Service";
 import CourseSectionView from "layouts/Course";
 import AddCourse from "layouts/Course/Addcoures";
 import EditCourse from "layouts/Course/Editcoures";
+import OttServiceGridView from "layouts/OTT-Service";
+import AddOTTService from "layouts/OTT-Service/Add-ott-Service";
 
 const routes = [
   {
@@ -56,6 +58,14 @@ const routes = [
   },
   {
     type: "collapse",
+    name: "OTT Service",
+    key: "OTT-Service",
+    icon: <CardGiftcardIcon />,
+    route: "/OTT-Service",
+    component: <OttServiceGridView />,
+  },
+  {
+    type: "collapse",
     name: "Sign Out",
     key: "sign-in",
     icon: <Icon fontSize="small">login</Icon>,
@@ -69,6 +79,10 @@ const routes = [
   {
     route: "/Addcoures",
     component: <AddCourse />,
+  },
+  {
+    route: "/AddOTT",
+    component: <AddOTTService />,
   },
   {
     route: "/Editcoures/:id",

@@ -9,6 +9,7 @@ import Inquirysection from "./routes/Inquiry.route.js";
 import Requestservices from "./routes/Requestservices.route.js";
 import Slidersection from "./routes/Slidersection.route.js";
 import CourseSection from "./routes/Couressection.route.js";
+import OttserviceSection from "./routes/Ottservice.route.js";
 
 // Create an instance of Express
 const app = express();
@@ -45,6 +46,7 @@ app.use('/Inquiry',Inquirysection);
 app.use('/Requestservices',Requestservices);
 app.use('/Slidersection',Slidersection);
 app.use('/Couressection',CourseSection);
+app.use('/Ottservice',OttserviceSection);
 
 
 // Start server
