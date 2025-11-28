@@ -14,6 +14,7 @@ import AddCourse from "layouts/Course/Addcoures";
 import EditCourse from "layouts/Course/Editcoures";
 import OttServiceGridView from "layouts/OTT-Service";
 import AddOTTService from "layouts/OTT-Service/Add-ott-Service";
+import EditOttService from "layouts/OTT-Service/Edit-ott-Service";
 
 const routes = [
   {
@@ -91,6 +92,10 @@ const routes = [
   {
     route: "/EditSlider/:id",
     component: <EditSlider />,
+  },
+  {
+    route: "/EditOTT/:id",
+    component: <EditOttService />,
   },
 ];
 

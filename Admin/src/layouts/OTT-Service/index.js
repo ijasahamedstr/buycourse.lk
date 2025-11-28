@@ -158,7 +158,7 @@ function ServiceCard({ item, onDelete, deletingId }) {
         <Box />
 
         <Box sx={{ display: "flex", gap: 1 }}>
-          <Link to={`/EditOttService/${item._id}`} style={{ textDecoration: "none" }}>
+          <Link to={`/EditOTT/${item._id}`} style={{ textDecoration: "none" }}>
             <IconButton size="small" color="primary" aria-label="Edit service">
               <EditIcon fontSize="small" />
             </IconButton>
