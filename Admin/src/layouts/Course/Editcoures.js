@@ -21,7 +21,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 
 /**
- * EditCourse with Image + Video preview
+ * EditCourse with Image + Video preview (smaller previews)
  */
 export default function EditCourse() {
   const { id } = useParams();
@@ -49,6 +49,11 @@ export default function EditCourse() {
   const [selectedMainHeading, setSelectedMainHeading] = useState("");
 
   const availableCategories = ["Tamil", "English", "Sinhala"];
+
+  // ---------- preview size constants (smaller) ----------
+  const SMALL_IMAGE_MAX_HEIGHT = 200; // px
+  const SMALL_VIDEO_MAX_HEIGHT = 240; // px
+  const PREVIEW_MAX_WIDTH = 480; // px (keeps preview narrow)
 
   // ---------- Helpers for preview ----------
   const isImageUrl = (url) => {
@@ -78,7 +83,6 @@ export default function EditCourse() {
       const u = new URL(url);
       const hostname = u.hostname.toLowerCase();
       if (hostname.includes("youtu.be")) {
-        // pathname like /VIDEOID
         const id = u.pathname.slice(1);
         return id ? `https://www.youtube.com/embed/${id}` : null;
       }
@@ -86,7 +90,6 @@ export default function EditCourse() {
         const params = u.searchParams;
         const v = params.get("v");
         if (v) return `https://www.youtube.com/embed/${v}`;
-        // sometimes embed urls already used
         const pathParts = u.pathname.split("/");
         const idx = pathParts.indexOf("embed");
         if (idx !== -1 && pathParts[idx + 1])
@@ -111,7 +114,7 @@ export default function EditCourse() {
     const fetchCourse = async () => {
       try {
         setFetching(true);
-        const res = await axios.get(`${apiBase}/Coures/${id}`);
+        const res = await axios.get(`${apiBase}/Couressection/${id}`);
         const data = res?.data?.data ?? res?.data ?? null;
         if (!data) {
           await Swal.fire({ icon: "error", title: "Not found", text: "Course not found." });
@@ -321,7 +324,7 @@ export default function EditCourse() {
         mainHeadings: structuredHeadings,
       };
 
-      const res = await axios.put(`${apiBase}/Coures/${id}`, payload);
+      const res = await axios.put(`${apiBase}/Couressection/${id}`, payload);
 
       Swal.close();
       if (!res || res.status >= 300 || res.data?.status === 401 || res.data?.error) {
@@ -395,7 +398,7 @@ export default function EditCourse() {
     );
   }
 
-  // ---------- UI: previews will appear under respective inputs ----------
+  // ---------- UI: previews will appear under respective inputs (smaller sizes) ----------
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -499,8 +502,8 @@ export default function EditCourse() {
                     }
                   />
 
-                  {/* Image preview */}
-                  <Box sx={{ mb: 2 }}>
+                  {/* Image preview (smaller) */}
+                  <Box sx={{ mb: 2, maxWidth: PREVIEW_MAX_WIDTH, margin: "0 auto" }}>
                     {course.courseImage ? (
                       preview.imageValid ? (
                         <Box
@@ -509,11 +512,11 @@ export default function EditCourse() {
                           alt="Course preview"
                           sx={{
                             width: "100%",
-                            maxHeight: 320,
+                            maxHeight: SMALL_IMAGE_MAX_HEIGHT,
                             objectFit: "contain",
                             borderRadius: 1,
                             border: "1px solid rgba(0,0,0,0.06)",
-                            boxShadow: 1,
+                            boxShadow: 0,
                             background: "#fff",
                           }}
                         />
@@ -521,7 +524,7 @@ export default function EditCourse() {
                         <Box
                           sx={{
                             width: "100%",
-                            p: 2,
+                            p: 1,
                             borderRadius: 1,
                             border: "1px dashed rgba(0,0,0,0.06)",
                             bgcolor: "rgba(0,0,0,0.02)",
@@ -557,8 +560,8 @@ export default function EditCourse() {
                     }
                   />
 
-                  {/* Video preview */}
-                  <Box sx={{ mb: 2 }}>
+                  {/* Video preview (smaller) */}
+                  <Box sx={{ mb: 2, maxWidth: PREVIEW_MAX_WIDTH, margin: "0 auto" }}>
                     {course.coursedemovideolink ? (
                       preview.videoEmbed ? (
                         <Box
@@ -569,6 +572,7 @@ export default function EditCourse() {
                             borderRadius: 1,
                             overflow: "hidden",
                             border: "1px solid rgba(0,0,0,0.06)",
+                            maxHeight: SMALL_VIDEO_MAX_HEIGHT,
                           }}
                         >
                           <iframe
@@ -592,14 +596,19 @@ export default function EditCourse() {
                             border: "1px solid rgba(0,0,0,0.06)",
                             borderRadius: 1,
                             overflow: "hidden",
+                            maxHeight: SMALL_VIDEO_MAX_HEIGHT,
                           }}
                         >
                           <video
                             controls
                             src={course.coursedemovideolink}
-                            style={{ width: "100%", maxHeight: 480, display: "block" }}
+                            style={{
+                              width: "100%",
+                              maxHeight: SMALL_VIDEO_MAX_HEIGHT,
+                              display: "block",
+                            }}
                           >
-                            Your browser does not support the video tag.{" "}
+                            Your browser does not support the video tag.
                             <a href={course.coursedemovideolink} target="_blank" rel="noreferrer">
                               Open video
                             </a>
@@ -615,7 +624,7 @@ export default function EditCourse() {
                           }}
                         >
                           <MDTypography variant="caption" color="text">
-                            Preview not available for this link.{" "}
+                            Preview not available for this link.
                             <a href={course.coursedemovideolink} target="_blank" rel="noreferrer">
                               Open in new tab
                             </a>

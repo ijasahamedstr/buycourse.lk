@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import Button from "@mui/material/Button";
@@ -45,6 +45,60 @@ export default function AddCourse() {
 
   const apiBase = process.env.REACT_APP_API_HOST || "";
 
+  // Preview sizing constants
+  const PREVIEW_MAX_WIDTH = 480;
+  const IMAGE_MAX_HEIGHT = 200;
+  const VIDEO_MAX_HEIGHT = 240;
+
+  const isImageUrl = (url) => {
+    if (!url) return false;
+    try {
+      const u = new URL(url);
+      return /\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i.test(u.pathname);
+    } catch {
+      return false;
+    }
+  };
+
+  const isVideoFileUrl = (url) => {
+    if (!url) return false;
+    try {
+      const u = new URL(url);
+      return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(u.pathname);
+    } catch {
+      return false;
+    }
+  };
+
+  const getYouTubeEmbedUrl = (url) => {
+    if (!url) return null;
+    try {
+      const u = new URL(url);
+      const hostname = u.hostname.toLowerCase();
+      if (hostname.includes("youtu.be")) {
+        const id = u.pathname.slice(1);
+        return id ? `https://www.youtube.com/embed/${id}` : null;
+      }
+      if (hostname.includes("youtube.com") || hostname.includes("youtube-nocookie.com")) {
+        const v = u.searchParams.get("v");
+        if (v) return `https://www.youtube.com/embed/${v}`;
+        const parts = u.pathname.split("/");
+        const idx = parts.indexOf("embed");
+        if (idx !== -1 && parts[idx + 1]) return `https://www.youtube.com/embed/${parts[idx + 1]}`;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const preview = useMemo(() => {
+    const imageValid = isImageUrl(course.courseImage);
+    const videoEmbed = getYouTubeEmbedUrl(course.coursedemovideolink);
+    const videoFile = isVideoFileUrl(course.coursedemovideolink);
+    return { imageValid, videoEmbed, videoFile };
+  }, [course.courseImage, course.coursedemovideolink]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCourse((prev) => ({ ...prev, [name]: value }));
@@ -58,7 +112,6 @@ export default function AddCourse() {
       setErrors((prev) => ({ ...prev, mainHeadingInput: "Main heading cannot be empty." }));
       return;
     }
-    // avoid duplicates
     if (course.mainHeadings.includes(trimmed)) {
       setErrors((prev) => ({ ...prev, mainHeadingInput: "This main heading already exists." }));
       return;
@@ -79,17 +132,12 @@ export default function AddCourse() {
       const newMain = prev.mainHeadings.filter((_, i) => i !== index);
       const newMap = { ...prev.subHeadingsMap };
       delete newMap[heading];
-      return {
-        ...prev,
-        mainHeadings: newMain,
-        subHeadingsMap: newMap,
-      };
+      return { ...prev, mainHeadings: newMain, subHeadingsMap: newMap };
     });
-    // if removed heading was selected, clear selection
     setSelectedMainHeading((prev) => (prev === heading ? "" : prev));
   };
 
-  // --- Sub-heading handlers (add under selected main heading) ---
+  // --- Sub-heading handlers ---
   const handleAddSubHeading = () => {
     const main = selectedMainHeading;
     if (!main) {
@@ -104,19 +152,14 @@ export default function AddCourse() {
     setCourse((prev) => {
       const current = prev.subHeadingsMap[main] || [];
       if (current.includes(trimmed)) {
-        // set a visible error
         setErrors((prevErr) => ({
           ...prevErr,
           subHeadingInput: "This sub-heading already exists.",
         }));
-        return prev; // no change
+        return prev;
       }
-      return {
-        ...prev,
-        subHeadingsMap: { ...prev.subHeadingsMap, [main]: [...current, trimmed] },
-      };
+      return { ...prev, subHeadingsMap: { ...prev.subHeadingsMap, [main]: [...current, trimmed] } };
     });
-    // clear and errors
     setSubHeadingInput("");
     setErrors((prev) => ({ ...prev, subHeadingInput: "", selectedMainHeading: "" }));
   };
@@ -151,7 +194,6 @@ export default function AddCourse() {
       }
     }
 
-    // optional: validate demo video link if present (basic URL check)
     if (course.coursedemovideolink) {
       try {
         new URL(course.coursedemovideolink);
@@ -160,7 +202,6 @@ export default function AddCourse() {
       }
     }
 
-    // ensure at least one main heading exists
     if (course.mainHeadings.length === 0) newErrors.mainHeadings = "Add at least one main heading.";
 
     setErrors(newErrors);
@@ -181,8 +222,6 @@ export default function AddCourse() {
     });
 
     try {
-      // Transform structure into array of objects for backend:
-      // [{ heading: 'Main 1', subHeadings: ['a','b'] }, ...]
       const structuredHeadings = course.mainHeadings.map((h) => ({
         heading: h,
         subHeadings: course.subHeadingsMap[h] || [],
@@ -194,12 +233,12 @@ export default function AddCourse() {
         coursePrice: Number(course.coursePrice),
         duration: course.duration,
         courseImage: course.courseImage,
-        coursedemovideolink: course.coursedemovideolink, // <-- included
+        coursedemovideolink: course.coursedemovideolink,
         courseCategory: course.courseCategory,
         mainHeadings: structuredHeadings,
       };
 
-      const res = await axios.post(`${apiBase}/Coures`, payload);
+      const res = await axios.post(`${apiBase}/Couressection`, payload);
 
       Swal.close();
       if (!res || res.status >= 300 || res.data?.status === 401 || res.data?.error) {
@@ -214,14 +253,13 @@ export default function AddCourse() {
           title: "Created",
           text: res?.data?.message || "Course created successfully.",
         });
-        // reset form
         setCourse({
           courseName: "",
           courseDescription: "",
           coursePrice: "",
           duration: "",
           courseImage: "",
-          coursedemovideolink: "", // <-- reset
+          coursedemovideolink: "",
           mainHeadings: [],
           subHeadingsMap: {},
           courseCategory: "",
@@ -327,7 +365,7 @@ export default function AddCourse() {
                     label="Main Course Image URL (optional)"
                     variant="outlined"
                     fullWidth
-                    sx={{ mb: 2 }}
+                    sx={{ mb: 1 }}
                     name="courseImage"
                     value={course.courseImage}
                     onChange={handleChange}
@@ -337,18 +375,138 @@ export default function AddCourse() {
                     }
                   />
 
+                  {/* Image preview */}
+                  <Box sx={{ mb: 2, maxWidth: PREVIEW_MAX_WIDTH, margin: "0 auto" }}>
+                    {course.courseImage ? (
+                      preview.imageValid ? (
+                        <Box
+                          component="img"
+                          src={course.courseImage}
+                          alt="Course preview"
+                          sx={{
+                            width: "100%",
+                            maxHeight: IMAGE_MAX_HEIGHT,
+                            objectFit: "contain",
+                            borderRadius: 1,
+                            border: "1px solid rgba(0,0,0,0.06)",
+                            background: "#fff",
+                          }}
+                        />
+                      ) : (
+                        <Box
+                          sx={{
+                            width: "100%",
+                            p: 1,
+                            borderRadius: 1,
+                            border: "1px dashed rgba(0,0,0,0.06)",
+                            bgcolor: "rgba(0,0,0,0.02)",
+                          }}
+                        >
+                          <MDTypography variant="caption" color="text">
+                            Not a valid direct image URL. You can still save it, or provide a direct
+                            image link (jpg, png, webp, svg).
+                          </MDTypography>
+                        </Box>
+                      )
+                    ) : (
+                      <MDTypography variant="caption" color="text">
+                        No image provided — preview will appear here when you paste a direct image
+                        URL.
+                      </MDTypography>
+                    )}
+                  </Box>
+
                   {/* NEW: Course Demo Video Link */}
                   <TextField
                     label="Course Demo Video Link (optional)"
                     variant="outlined"
                     fullWidth
-                    sx={{ mb: 2 }}
+                    sx={{ mb: 1 }}
                     name="coursedemovideolink"
                     value={course.coursedemovideolink}
                     onChange={handleChange}
                     error={Boolean(errors.coursedemovideolink)}
-                    helperText={errors.coursedemovideolink || "Paste YouTube or any video link."}
+                    helperText={
+                      errors.coursedemovideolink ||
+                      "Paste YouTube or direct video link (.mp4, .webm)."
+                    }
                   />
+
+                  {/* Video preview */}
+                  <Box sx={{ mb: 2, maxWidth: PREVIEW_MAX_WIDTH, margin: "0 auto" }}>
+                    {course.coursedemovideolink ? (
+                      preview.videoEmbed ? (
+                        <Box
+                          sx={{
+                            position: "relative",
+                            width: "100%",
+                            pt: "56.25%",
+                            borderRadius: 1,
+                            overflow: "hidden",
+                            border: "1px solid rgba(0,0,0,0.06)",
+                            maxHeight: VIDEO_MAX_HEIGHT,
+                          }}
+                        >
+                          <iframe
+                            title="Course demo"
+                            src={preview.videoEmbed}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "100%",
+                              height: "100%",
+                            }}
+                          />
+                        </Box>
+                      ) : preview.videoFile ? (
+                        <Box
+                          sx={{
+                            border: "1px solid rgba(0,0,0,0.06)",
+                            borderRadius: 1,
+                            overflow: "hidden",
+                            maxHeight: VIDEO_MAX_HEIGHT,
+                          }}
+                        >
+                          <video
+                            controls
+                            src={course.coursedemovideolink}
+                            style={{ width: "100%", maxHeight: VIDEO_MAX_HEIGHT, display: "block" }}
+                          >
+                            Your browser does not support the video tag.{" "}
+                            <a href={course.coursedemovideolink} target="_blank" rel="noreferrer">
+                              Open video
+                            </a>
+                          </video>
+                        </Box>
+                      ) : (
+                        <Box
+                          sx={{
+                            p: 1,
+                            borderRadius: 1,
+                            border: "1px dashed rgba(0,0,0,0.06)",
+                            bgcolor: "rgba(0,0,0,0.02)",
+                          }}
+                        >
+                          <MDTypography variant="caption" color="text">
+                            Preview not available for this link.{" "}
+                            <a href={course.coursedemovideolink} target="_blank" rel="noreferrer">
+                              Open in new tab
+                            </a>
+                            .
+                          </MDTypography>
+                        </Box>
+                      )
+                    ) : (
+                      <MDTypography variant="caption" color="text">
+                        No demo video link — paste a YouTube link or direct MP4/WebM link to preview
+                        it.
+                      </MDTypography>
+                    )}
+                  </Box>
 
                   {/* Category select */}
                   <FormControl fullWidth sx={{ mb: 2, height: "40px" }}>
@@ -359,11 +517,7 @@ export default function AddCourse() {
                       name="courseCategory"
                       value={course.courseCategory}
                       onChange={handleChange}
-                      sx={{
-                        height: 55, // <-- Increase height
-                        display: "flex",
-                        alignItems: "center",
-                      }}
+                      sx={{ height: 55, display: "flex", alignItems: "center" }}
                     >
                       <MenuItem value="Tamil">Tamil</MenuItem>
                       <MenuItem value="English">English</MenuItem>
@@ -489,11 +643,7 @@ export default function AddCourse() {
                           labelId="select-main-heading-label"
                           label="Main Heading"
                           value={selectedMainHeading}
-                          sx={{
-                            height: 40, // <-- Increase height
-                            display: "flex",
-                            alignItems: "center",
-                          }}
+                          sx={{ height: 40, display: "flex", alignItems: "center" }}
                           onChange={(e) => {
                             setSelectedMainHeading(e.target.value);
                             setErrors((prev) => ({ ...prev, selectedMainHeading: "" }));

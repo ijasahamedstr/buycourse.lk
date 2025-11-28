@@ -172,7 +172,7 @@ export default function CourseGridView() {
   const [deletingId, setDeletingId] = useState(null);
 
   // Use a single endpoint constant (fix typo to "Courses")
-  const COURSES_ENDPOINT = `${apiBase}/Coures`;
+  const COURSES_ENDPOINT = `${apiBase}/Couressection`;
 
   useEffect(() => {
     let mounted = true;
