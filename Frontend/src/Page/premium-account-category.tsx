@@ -125,6 +125,7 @@ export default function AllAccountsWithCategory() {
 
   const readableTitle = slugToReadable(activeSlug);
 
+  // ---------- HERO / active index state (used to highlight a card) ----------
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
@@ -180,7 +181,7 @@ export default function AllAccountsWithCategory() {
   const CARD_WIDTH = 260; // px
   const CARD_HEIGHT = 150; // px
 
-  const cardStyle = (image: string): React.CSSProperties => ({
+  const cardStyle = (image: string, isActive = false): React.CSSProperties => ({
     flex: `0 0 ${CARD_WIDTH}px`,
     width: `${CARD_WIDTH}px`,
     height: `${CARD_HEIGHT}px`,
@@ -192,11 +193,13 @@ export default function AllAccountsWithCategory() {
     display: "flex",
     flexDirection: "column",
     justifyContent: "flex-end",
-    boxShadow: "0 6px 18px rgba(0,0,0,0.10)",
+    boxShadow: isActive ? "0 12px 30px rgba(0,0,0,0.18)" : "0 6px 18px rgba(0,0,0,0.10)",
+    transform: isActive ? "scale(1.04)" : "scale(1)",
     transition: "transform 0.28s ease, box-shadow 0.28s ease",
     position: "relative",
     overflow: "hidden",
     backgroundColor: "#F1F5F9",
+    outline: isActive ? "2px solid rgba(30,76,161,0.12)" : "none",
   });
 
   const buttonStyle: React.CSSProperties = {
@@ -292,6 +295,9 @@ export default function AllAccountsWithCategory() {
   return (
     <div className="page-wrap">
 
+      {/* ---------- Hero image showing current active slide ---------- */}
+      <div className="hero-large" style={{ height: 220, backgroundImage: `url(${heroSlides[activeIndex]})`, backgroundSize: 'cover', backgroundPosition: 'center' }} aria-hidden />
+
       {/* ---------- Category slider (full-width) ---------- */}
       <div style={containerStyle}>
         <div
@@ -307,6 +313,7 @@ export default function AllAccountsWithCategory() {
         >
           {cards.map((card, index) => {
             const to = `/category/${slugify(card.title)}`;
+            const isActive = index === activeIndex; // use the activeIndex variable
             return (
               <Link
                 key={index}
@@ -323,7 +330,7 @@ export default function AllAccountsWithCategory() {
                   onCardView(card);
                 }}
               >
-                <div className="campus-card" style={cardStyle(card.image)}>
+                <div className="campus-card" style={cardStyle(card.image, isActive)}>
                   {card.title && <div className="card-title">{card.title}</div>}
                   {card.desc && <div className="card-desc">{card.desc}</div>}
                   {card.original && (
@@ -357,6 +364,26 @@ export default function AllAccountsWithCategory() {
               </Link>
             );
           })}
+        </div>
+
+        {/* small indicators for hero slides */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 12 }} aria-hidden>
+          {heroSlides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveIndex(i)}
+              aria-label={`Show slide ${i + 1}`}
+              style={{
+                width: i === activeIndex ? 18 : 10,
+                height: 10,
+                borderRadius: 10,
+                background: i === activeIndex ? '#1E4CA1' : 'rgba(0,0,0,0.14)',
+                border: 'none',
+                transition: 'all 180ms ease',
+                cursor: 'pointer'
+              }}
+            />
+          ))}
         </div>
       </div>
 
