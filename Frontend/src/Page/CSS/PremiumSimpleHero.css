@@ -32,14 +32,14 @@ body, .page-wrap {
   background: var(--card-bg);
 }
 
-.slide {
+/* .slide {
   position: absolute;
   inset: 0;
   background-size: cover;
   background-position: center;
   opacity: 0;
   transition: opacity 1s ease-in-out;
-}
+} */
 .slide.active {
   opacity: 1;
 }
