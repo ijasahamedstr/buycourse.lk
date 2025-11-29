@@ -54,14 +54,14 @@ export default function CoursePage({ course }: CourseProps) {
   } = course ?? {};
 
   const modules = [
-    { title: "Academic English", duration: "22 mins" }, // Module 1
-    { title: "Essentials Of Computing", duration: "44 mins" }, // Module 2
-    { title: "Mathematics I", duration: "26 mins" }, // Module 3
-    { title: "Professional Communication", duration: "29 mins" }, // Module 4
-    { title: "Understanding Organizations", duration: "56 mins" }, // Module 5
-    { title: "Introduction To Economics", duration: "55 mins" }, // Module 6
-    { title: "Principles Of Marketing", duration: "42 mins" }, // Module 7
-    { title: "Introduction To Accounting", duration: "34 mins" }, // Module 8
+    { title: "Academic English", duration: "22 mins" },
+    { title: "Essentials Of Computing", duration: "44 mins" },
+    { title: "Mathematics I", duration: "26 mins" },
+    { title: "Professional Communication", duration: "29 mins" },
+    { title: "Understanding Organizations", duration: "56 mins" },
+    { title: "Introduction To Economics", duration: "55 mins" },
+    { title: "Principles Of Marketing", duration: "42 mins" },
+    { title: "Introduction To Accounting", duration: "34 mins" },
   ];
 
   const modulesSubdomain = courseCategory;
@@ -76,15 +76,12 @@ export default function CoursePage({ course }: CourseProps) {
   const getYouTubeEmbed = (url: string) => {
     try {
       const u = new URL(url);
-      // youtu.be short link
       if (u.hostname.includes("youtu.be")) {
         return `https://www.youtube.com/embed${u.pathname}`;
       }
-      // standard watch?v=
       if (u.searchParams.get("v")) {
         return `https://www.youtube.com/embed/${u.searchParams.get("v")}`;
       }
-      // already embed
       if (url.includes("/embed/")) return url;
       return url;
     } catch {
@@ -94,57 +91,11 @@ export default function CoursePage({ course }: CourseProps) {
   const isVideoFile = (url: string) => /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
 
   return (
-    <Box sx={{ bgcolor: "#fff", fontFamily: font }}>
-      {/* HERO */}
-      <Box
-        sx={{
-          width: "100%",
-          height: { xs: 220, md: 320 },
-          overflow: "hidden",
-          position: "relative",
-        }}
-      >
-        <CardMedia
-          component="img"
-          image={courseImage}
-          alt="Course hero"
-          sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-        <Box
-          sx={{
-            position: "absolute",
-            left: { xs: 16, md: 56 },
-            bottom: { xs: 16, md: 40 },
-            fontFamily: font,
-          }}
-        >
-          <Chip label={mainHeadings[0] ?? "Foundation in Business"} color="primary" sx={{ fontWeight: 700, fontFamily: font }} />
-          <Typography
-            sx={{
-              color: "#fff",
-              fontWeight: 800,
-              fontSize: { xs: 20, md: 32 },
-              mt: 1,
-              fontFamily: font,
-            }}
-          >
-            {courseName}
-          </Typography>
-          <Typography
-            sx={{
-              color: "rgba(255,255,255,0.9)",
-              mt: 0.5,
-              fontFamily: font,
-            }}
-          >
-            {courseDescription.split(".")[0]}
-          </Typography>
-        </Box>
-      </Box>
-
+    // Removed top spacing: ensure wrapper has no top padding
+    <Box sx={{ bgcolor: "#fff", fontFamily: font, pt: 0 }}>
       {/* DEMO VIDEO (renders only when link provided) */}
       {coursedemovideolink ? (
-        <Box sx={{ maxWidth: 1200, mx: "auto", px: 2, mt: 3 }}>
+        <Box sx={{ maxWidth: 1200, mx: "auto", px: 2, mt: 0 }}>
           <Card sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 3 }}>
             <Box sx={{ p: 2 }}>
               <Typography sx={{ fontWeight: 700, mb: 1, fontFamily: font }}>Course demo</Typography>
@@ -168,16 +119,10 @@ export default function CoursePage({ course }: CourseProps) {
                   />
                 </Box>
               ) : isVideoFile(coursedemovideolink) ? (
-                // HTML5 video player for direct mp4/webm/ogg links
                 <Box>
-                  <video
-                    controls
-                    src={coursedemovideolink}
-                    style={{ width: "100%", borderRadius: 6 }}
-                  />
+                  <video controls src={coursedemovideolink} style={{ width: "100%", borderRadius: 6 }} />
                 </Box>
               ) : (
-                // Fallback: link to open in new tab
                 <Typography variant="body2">
                   Demo video:&nbsp;
                   <Link href={coursedemovideolink} target="_blank" rel="noreferrer">
@@ -191,7 +136,7 @@ export default function CoursePage({ course }: CourseProps) {
       ) : null}
 
       {/* BREADCRUMB */}
-      <Box sx={{ bgcolor: "#f3f6fb", py: 2, mt: 3 }}>
+      <Box sx={{ bgcolor: "#f3f6fb", py: 2, mt: 0 }}>
         <Box sx={{ maxWidth: 1200, mx: "auto", px: 2 }}>
           <Breadcrumbs separator="›" sx={{ fontFamily: font }}>
             <Link href="#" style={{ fontFamily: font }}>
@@ -208,7 +153,7 @@ export default function CoursePage({ course }: CourseProps) {
       </Box>
 
       {/* MAIN CONTENT */}
-      <Box sx={{ maxWidth: 1200, mx: "auto", px: 2, py: 4 }}>
+      <Box sx={{ maxWidth: 1200, mx: "auto", px: 2, py: 2 }}>
         <Box
           sx={{
             display: "flex",
@@ -245,9 +190,7 @@ export default function CoursePage({ course }: CourseProps) {
                   </Typography>
                 </Box>
 
-                <Typography sx={{ mb: 2, fontFamily: font }}>
-                  {courseDescription}
-                </Typography>
+                <Typography sx={{ mb: 2, fontFamily: font }}>{courseDescription}</Typography>
 
                 <Divider sx={{ my: 2 }} />
 
@@ -344,9 +287,7 @@ export default function CoursePage({ course }: CourseProps) {
                               }}
                             >
                               <Box>
-                                <Typography sx={{ fontWeight: 600, fontFamily: font }}>
-                                  {m.title}
-                                </Typography>
+                                <Typography sx={{ fontWeight: 600, fontFamily: font }}>{m.title}</Typography>
                                 <Typography variant="body2" color="text.secondary" sx={{ fontFamily: font }}>
                                   Module overview • {m.duration}
                                 </Typography>
@@ -501,10 +442,6 @@ export default function CoursePage({ course }: CourseProps) {
                     "&:hover": { backgroundColor: "#162e6b" },
                   }}
                 >
-                  Enroll Now
-                </Button>
-
-                <Button fullWidth variant="outlined" sx={{ mt: 1, textTransform: "none", fontFamily: font }}>
                   Add to cart
                 </Button>
 
