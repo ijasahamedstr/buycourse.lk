@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Breadcrumbs,
@@ -16,10 +16,24 @@ import {
   List,
   ListItem,
   ListItemText,
+  Drawer,
+  ListItemAvatar,
+  Avatar,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
+import DeleteIcon from "@mui/icons-material/Delete";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
-// Pass a `course` prop with fields including `coursedemovideolink` (string).
 type CourseProps = {
   course?: {
     courseName?: string;
@@ -32,6 +46,20 @@ type CourseProps = {
     coursedemovideolink?: string;
     date?: string;
   };
+};
+
+type CartItem = {
+  id: string;
+  title: string;
+  price: number;
+  qty: number;
+  image?: string;
+};
+
+type ModuleItem = {
+  title: string;
+  duration: string;
+  finished?: boolean;
 };
 
 export default function CoursePage({ course }: CourseProps) {
@@ -53,21 +81,51 @@ export default function CoursePage({ course }: CourseProps) {
     date = "",
   } = course ?? {};
 
-  const modules = [
-    { title: "Academic English", duration: "22 mins" },
-    { title: "Essentials Of Computing", duration: "44 mins" },
-    { title: "Mathematics I", duration: "26 mins" },
-    { title: "Professional Communication", duration: "29 mins" },
-    { title: "Understanding Organizations", duration: "56 mins" },
-    { title: "Introduction To Economics", duration: "55 mins" },
-    { title: "Principles Of Marketing", duration: "42 mins" },
-    { title: "Introduction To Accounting", duration: "34 mins" },
-  ];
+  // modules moved to state so they can be edited and marked finished
+  const [modules, setModules] = useState<ModuleItem[]>([
+    { title: "Academic English", duration: "22 mins", finished: false },
+    { title: "Essentials Of Computing", duration: "44 mins", finished: false },
+    { title: "Mathematics I", duration: "26 mins", finished: false },
+    { title: "Professional Communication", duration: "29 mins", finished: false },
+    { title: "Understanding Organizations", duration: "56 mins", finished: false },
+    { title: "Introduction To Economics", duration: "55 mins", finished: false },
+    { title: "Principles Of Marketing", duration: "42 mins", finished: false },
+    { title: "Introduction To Accounting", duration: "34 mins", finished: false },
+  ]);
 
   const modulesSubdomain = courseCategory;
 
   const toggleModule = (idx: number) => {
     setOpenModuleIndex((prev) => (prev === idx ? null : idx));
+  };
+
+  // Dialog (View Card) state
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewIndex, setViewIndex] = useState<number | null>(null);
+  const [viewTitle, setViewTitle] = useState("");
+  const [viewFinished, setViewFinished] = useState(false);
+
+  const openViewDialog = (idx: number) => {
+    setViewIndex(idx);
+    setViewTitle(modules[idx].title);
+    setViewFinished(!!modules[idx].finished);
+    setViewDialogOpen(true);
+  };
+
+  const closeViewDialog = () => {
+    setViewDialogOpen(false);
+    setViewIndex(null);
+  };
+
+  const saveViewChanges = () => {
+    if (viewIndex === null) return;
+    setModules((prev) => {
+      const next = [...prev];
+      next[viewIndex] = { ...next[viewIndex], title: viewTitle, finished: viewFinished };
+      return next;
+    });
+    setViewDialogOpen(false);
+    setViewIndex(null);
   };
 
   // Helpers to detect video type and convert YouTube URLs to embed
@@ -90,8 +148,92 @@ export default function CoursePage({ course }: CourseProps) {
   };
   const isVideoFile = (url: string) => /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
 
+  // -----------------------
+  // Cart Drawer state + helpers
+  // -----------------------
+  const [cartOpen, setCartOpen] = useState(false);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const raw = localStorage.getItem("cart_v1");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("cart_v1", JSON.stringify(cart));
+    } catch {}
+  }, [cart]);
+
+  useEffect(() => {
+    const onOpenCart = () => setCartOpen(true);
+    window.addEventListener("openCart", onOpenCart);
+    return () => window.removeEventListener("openCart", onOpenCart);
+  }, []);
+
+  const parsePrice = (p: string | number) => {
+    if (typeof p === "number") return p;
+    if (typeof p === "string") {
+      const cleaned = p.replace(/[^0-9.]/g, "");
+      const n = parseFloat(cleaned);
+      return Number.isFinite(n) ? n : 0;
+    }
+    return 0;
+  };
+
+  /**
+   * addToCart (no-popup behavior)
+   * - If item already exists in cart: DO NOT increment qty.
+   *   Instead, just open the cart drawer (no dialog/popover).
+   * - If not present: add with qty (default 1) as before.
+   */
+  const addToCart = (item: Omit<CartItem, "qty"> & { qty?: number }) => {
+    setCart((prev) => {
+      const idx = prev.findIndex((x) => x.id === item.id);
+      if (idx >= 0) {
+        // item already in cart -> do not increment; simply open cart
+        setCartOpen(true);
+        return prev;
+      }
+      return [...prev, { ...item, qty: item.qty ?? 1 }];
+    });
+    // For analytics / external listeners
+    window.dispatchEvent(new CustomEvent("cartUpdated", { detail: { source: "CoursePage" } }));
+  };
+
+  const updateQty = (id: string, qty: number) => {
+    setCart((prev) => prev.map((p) => (p.id === id ? { ...p, qty: Math.max(1, qty) } : p)));
+  };
+
+  const removeFromCart = (id: string) => {
+    setCart((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const cartTotal = cart.reduce((s, it) => s + it.price * it.qty, 0);
+
+  const checkoutWhatsApp = () => {
+    if (cart.length === 0) return;
+    const items = cart.map((it) => `${it.title} x${it.qty} — ${formatMoney(it.price * it.qty)}`).join("\n");
+    const message = `
+New Order - buycourse.lk
+
+${items}
+
+Total: ${formatMoney(cartTotal)}
+
+Customer info: (please add name & contact)
+`;
+    const phoneNumber = "94767080553";
+    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
+  };
+
+  const formatMoney = (n: number) => `$${n.toFixed(2)}`;
+
+  // ---------- UI - render ----------
   return (
-    // Removed top spacing: ensure wrapper has no top padding
     <Box sx={{ bgcolor: "#fff", fontFamily: font, pt: 0 }}>
       {/* DEMO VIDEO (renders only when link provided) */}
       {coursedemovideolink ? (
@@ -100,9 +242,8 @@ export default function CoursePage({ course }: CourseProps) {
             <Box sx={{ p: 2 }}>
               <Typography sx={{ fontWeight: 700, mb: 1, fontFamily: font }}>Course demo</Typography>
 
-              {/* YouTube embed */}
               {isYouTube(coursedemovideolink) ? (
-                <Box sx={{ position: "relative", pt: "56.25%" /* 16:9 */ }}>
+                <Box sx={{ position: "relative", pt: "56.25%" }}>
                   <iframe
                     title="Course demo"
                     src={getYouTubeEmbed(coursedemovideolink)}
@@ -275,8 +416,7 @@ export default function CoursePage({ course }: CourseProps) {
                                 alignItems: "center",
                                 py: 1.25,
                                 px: 2,
-                                borderBottom:
-                                  i < modules.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none",
+                                borderBottom: i < modules.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none",
                                 cursor: "pointer",
                               }}
                               role="button"
@@ -286,11 +426,29 @@ export default function CoursePage({ course }: CourseProps) {
                                 if (e.key === "Enter" || e.key === " ") toggleModule(i);
                               }}
                             >
-                              <Box>
-                                <Typography sx={{ fontWeight: 600, fontFamily: font }}>{m.title}</Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ fontFamily: font }}>
-                                  Module overview • {m.duration}
-                                </Typography>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <Box>
+                                  <Typography
+                                    sx={{
+                                      fontWeight: 600,
+                                      fontFamily: font,
+                                      textDecoration: m.finished ? "line-through" : "none",
+                                    }}
+                                  >
+                                    {m.title}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontFamily: font }}>
+                                    Module overview • {m.duration}
+                                  </Typography>
+                                </Box>
+
+                                {m.finished && (
+                                  <Chip
+                                    label="Finished"
+                                    size="small"
+                                    sx={{ ml: 1, bgcolor: "#eef6ee", color: "#1a7f35", fontWeight: 600, fontFamily: font }}
+                                  />
+                                )}
                               </Box>
 
                               <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
@@ -315,6 +473,19 @@ export default function CoursePage({ course }: CourseProps) {
                                   }}
                                 >
                                   <ExpandMoreIcon />
+                                </IconButton>
+
+                                {/* VIEW / EDIT button - opens dialog */}
+                                <IconButton
+                                  size="small"
+                                  aria-label="view-module"
+                                  onClick={(e) => {
+                                    // prevent parent row click (toggle) from firing
+                                    e.stopPropagation();
+                                    openViewDialog(i);
+                                  }}
+                                >
+                                  <VisibilityIcon fontSize="small" />
                                 </IconButton>
                               </Box>
                             </Box>
@@ -441,6 +612,14 @@ export default function CoursePage({ course }: CourseProps) {
                     fontFamily: font,
                     "&:hover": { backgroundColor: "#162e6b" },
                   }}
+                  onClick={() =>
+                    addToCart({
+                      id: "course_" + (courseName || "course").replace(/\s+/g, "_").toLowerCase(),
+                      title: courseName,
+                      price: parsePrice(coursePrice),
+                      image: courseImage,
+                    })
+                  }
                 >
                   Add to cart
                 </Button>
@@ -481,7 +660,125 @@ export default function CoursePage({ course }: CourseProps) {
         </Box>
       </Box>
 
-      {/* (footer removed per request) */}
+      {/* ---------- Cart Drawer ---------- */}
+      <Drawer anchor="right" open={cartOpen} onClose={() => setCartOpen(false)}>
+        <Box sx={{ width: { xs: 320, sm: 420 }, p: 2, fontFamily: font }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+            <Typography sx={{ fontWeight: 700,fontFamily: "'Montserrat', sans-serif"}}>Your Cart</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{fontFamily: "'Montserrat', sans-serif"}}>
+              {cart.length} item{cart.length !== 1 ? "s" : ""}
+            </Typography>
+          </Box>
+
+          <Divider sx={{ mb: 1 }} />
+
+          {cart.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <Typography variant="body2" color="text.secondary" sx={{fontFamily: "'Montserrat', sans-serif"}}>Your cart is empty.</Typography>
+            </Box>
+          ) : (
+            <List sx={{ maxHeight: 420, overflow: "auto" }}>
+              {cart.map((it) => (
+                <ListItem key={it.id} sx={{ alignItems: "flex-start" }}>
+                  <ListItemAvatar>
+                    <Avatar variant="rounded" src={it.image} alt={it.title} />
+                  </ListItemAvatar>
+                  <Box sx={{ flex: 1, ml: 1 }}>
+                    <Typography sx={{ fontWeight: 700,fontFamily: "'Montserrat', sans-serif" }}>{it.title}</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{fontFamily: "'Montserrat', sans-serif"}}>
+                      {formatMoney(it.price)} each
+                    </Typography>
+
+                    <Box sx={{ display: "flex", gap: 1, alignItems: "center", mt: 1,fontFamily: "'Montserrat', sans-serif" }}>
+                      <IconButton size="small" onClick={() => updateQty(it.id, it.qty - 1)}>
+                        <RemoveIcon fontSize="small" />
+                      </IconButton>
+                      <TextField
+                        value={it.qty}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value || "1", 10) || 1;
+                          updateQty(it.id, v);
+                        }}
+                        inputProps={{ inputMode: "numeric", min: 1, style: { textAlign: "center" } }}
+                        size="small"
+                        sx={{ width: 64 }}
+                      />
+                      <IconButton size="small" onClick={() => updateQty(it.id, it.qty + 1)} sx={{fontFamily: "'Montserrat', sans-serif"}}>
+                        <AddIcon fontSize="small" />
+                      </IconButton>
+
+                      <Box sx={{ flex: 1 }} />
+                      <Typography sx={{ fontWeight: 700,fontFamily: "'Montserrat', sans-serif" }}>{formatMoney(it.price * it.qty)}</Typography>
+                      <IconButton size="small" onClick={() => removeFromCart(it.id)} sx={{ ml: 1 ,fontFamily: "'Montserrat', sans-serif"}}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                </ListItem>
+              ))}
+            </List>
+          )}
+
+          <Divider sx={{ my: 2 }} />
+
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+            <Typography sx={{ fontWeight: 700,fontFamily: "'Montserrat', sans-serif" }}>Total</Typography>
+            <Typography sx={{ fontWeight: 700,fontFamily: "'Montserrat', sans-serif" }}>{formatMoney(cartTotal)}</Typography>
+          </Box>
+
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={checkoutWhatsApp}
+            disabled={cart.length === 0}
+            sx={{ textTransform: "none", mb: 1, backgroundColor: "#1b3b84",fontFamily: "'Montserrat', sans-serif", "&:hover": { backgroundColor: "#162e6b",fontFamily: "'Montserrat', sans-serif" } }}
+          >
+            Checkout via WhatsApp
+          </Button>
+
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={() => {
+              setCart([]);
+              setCartOpen(false);
+            }}
+            sx={{ textTransform: "none",fontFamily: "'Montserrat', sans-serif" }}
+          >
+            Clear cart
+          </Button>
+        </Box>
+      </Drawer>
+
+      {/* ---------- Module View Dialog ---------- */}
+      <Dialog open={viewDialogOpen} onClose={closeViewDialog} fullWidth maxWidth="sm">
+        <DialogTitle>View Module</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+            <TextField
+              label="Module Title"
+              value={viewTitle}
+              onChange={(e) => setViewTitle(e.target.value)}
+              fullWidth
+              InputLabelProps={{ sx: { fontFamily: font } }}
+              InputProps={{ sx: { fontFamily: font } }}
+            />
+            <FormControlLabel
+              control={<Checkbox checked={viewFinished} onChange={(e) => setViewFinished(e.target.checked)} />}
+              label="Mark as finished"
+            />
+            <Typography variant="body2" color="text.secondary">
+              Edit the module name or mark it as finished. Click Save to persist the changes to the module list.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeViewDialog}>Cancel</Button>
+          <Button variant="contained" onClick={saveViewChanges} sx={{ backgroundColor: "#1b3b84", "&:hover": { backgroundColor: "#162e6b" } }}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
