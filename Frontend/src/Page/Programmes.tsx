@@ -1,38 +1,72 @@
+// src/pages/Programmes.tsx
 import React, { useEffect, useState } from "react";
-import { Box, Container, Typography, Button } from "@mui/material";
+import { Box, Container, Typography, Button, CircularProgress } from "@mui/material";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-// Swiper CSS (import once per app or per component)
 import "swiper/css";
 import "swiper/css/pagination";
 
 type Course = {
   id: string;
   title: string;
-  instructor: string;
-  price?: string;
+  price?: string | number;
   duration?: string;
   image: string;
   description: string;
   category?: "tamil" | "sinhala" | "english" | "other";
+  demoVideo?: string;
+  mainHeadings?: string[];
+  instructor?: string;
+  coursedemovideolink?: string;
+  date?: string;
 };
 
-// sample course data — ensure ids are unique in your real data
-const courses: Course[] = [
-  { id: "tamil-101", title: "Tamil Language — Beginner", instructor: "Prof. Ananda", price: "LKR 3,499", duration: "3 months", image: "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1600&q=80", description: "Start speaking Tamil confidently.", category: "tamil" },
-  { id: "tamil-advanced", title: "Tamil Conversation — Intermediate", instructor: "Ms. Kavya", price: "LKR 4,499", duration: "3 months", image: "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=1600&q=80", description: "Practice real-life Tamil conversations.", category: "tamil" },
-
-  { id: "sinhala-101", title: "Sinhala Essentials", instructor: "Dr. Malini", price: "LKR 3,499", duration: "3 months", image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1600&q=80", description: "Essential Sinhala for beginners.", category: "sinhala" },
-  { id: "sinhala-convo", title: "Sinhala Conversation", instructor: "Ms. Nadeesha", price: "LKR 3,999", duration: "3 months", image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1600&q=80", description: "Interactive Sinhala classes.", category: "sinhala" },
-
-  { id: "english-communication", title: "English Communication Mastery", instructor: "Ms. Sarah Johnson", price: "LKR 4,999", duration: "4 months", image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1600&q=80", description: "Improve speaking and writing skills.", category: "english" },
-  { id: "english-business", title: "Business English", instructor: "Mr. Arjun", price: "LKR 5,499", duration: "4 months", image: "https://images.unsplash.com/photo-1557800636-894a64c1696f?auto=format&fit=crop&w=1600&q=80", description: "Professional English for meetings.", category: "english" },
-
-  { id: "premium-account", title: "Premium Account Service", instructor: "Support Team", price: "LKR 12,999 / year", duration: "12 months", image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1600&q=80", description: "Premium access & mentoring.", category: "other" },
+const FALLBACK_COURSES: Course[] = [
+  {
+    id: "tamil-101",
+    title: "Tamil Language — Beginner",
+    price: "3,499",
+    duration: "3 months",
+    image:
+      "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1600&q=80",
+    description: "Start speaking Tamil confidently.",
+    category: "tamil",
+  },
+  {
+    id: "tamil-advanced",
+    title: "Tamil Conversation — Intermediate",
+    price: "4,499",
+    duration: "3 months",
+    image:
+      "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=1600&q=80",
+    description: "Practice real-life Tamil conversations.",
+    category: "tamil",
+  },
+  {
+    id: "sinhala-101",
+    title: "Sinhala Essentials",
+    price: "3,499",
+    duration: "3 months",
+    image:
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1600&q=80",
+    description: "Essential Sinhala for beginners.",
+    category: "sinhala",
+  },
+  {
+    id: "english-communication",
+    title: "English Communication Mastery",
+    price: "4,999",
+    duration: "4 months",
+    image:
+      "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1600&q=80",
+    description: "Improve speaking and writing skills.",
+    category: "english",
+  },
 ];
 
-// safe slugify
 const slugify = (text: string) =>
   text
     .toString()
@@ -43,19 +77,24 @@ const slugify = (text: string) =>
     .replace(/[^a-z0-9\-]/g, "")
     .replace(/\-+/g, "-");
 
-// filtering by category (explicit field is more reliable)
-const tamilCourses = courses.filter((c) => c.category === "tamil");
-const sinhalaCourses = courses.filter((c) => c.category === "sinhala");
-const englishCourses = courses.filter((c) => c.category === "english");
+const truncate = (text: string | undefined, max = 100) => {
+  if (!text) return "";
+  const cleaned = text.replace(/\s+/g, " ").trim();
+  return cleaned.length > max ? cleaned.slice(0, max).trim() + "…" : cleaned;
+};
 
 const Programmes: React.FC = () => {
   const [mounted, setMounted] = useState(false);
+  const [courses, setCourses] = useState<Course[]>(FALLBACK_COURSES);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>("");
+  const [dbEmpty, setDbEmpty] = useState<boolean>(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // mark mounted so Swiper renders client-side
     setMounted(true);
 
-    // dynamic import Rellax safely (works even if not installed)
     let rellaxInstance: any = null;
     if (typeof window !== "undefined") {
       (async () => {
@@ -64,20 +103,105 @@ const Programmes: React.FC = () => {
           const Rellax = mod?.default || mod;
           rellaxInstance = new Rellax(".rellax", { speed: -2 });
         } catch (err) {
-          // Rellax not installed or failed — no-op
+          // noop if rellax isn't installed
         }
       })();
     }
+
+    const fetchCourses = async () => {
+      try {
+        const resp = await axios.get(`${import.meta.env.VITE_API_HOST}/Couressection`);
+        const data = resp.data;
+
+        let items: any[] = [];
+        if (Array.isArray(data)) items = data;
+        else if (Array.isArray(data?.data)) items = data.data;
+        else if (Array.isArray(data?.rows)) items = data.rows;
+        else if (data && typeof data === "object") {
+          const firstArray = Object.values(data).find((v) => Array.isArray(v));
+          items = Array.isArray(firstArray) ? firstArray : [];
+        }
+
+        if (!items || items.length === 0) {
+          setDbEmpty(true);
+          setError("");
+          setCourses(FALLBACK_COURSES);
+          return;
+        }
+
+        const mapped: Course[] = items.map((item: any, idx: number) => {
+          const id = (item.id ?? item._id ?? item.courseId ?? item.course_id ?? `course-${idx}`).toString();
+          const title =
+            item.courseName ?? item.title ?? item.name ?? item.course_name ?? `Course ${idx + 1}`;
+          const description =
+            item.courseDescription ?? item.description ?? item.summary ?? item.course_description ?? "";
+          const price = item.coursePrice ?? item.price ?? item.fee ?? undefined;
+          const duration = item.duration ?? item.courseDuration ?? item.course_duration ?? undefined;
+          const image =
+            item.courseImage ?? item.image ?? item.imageUrl ?? item.image_url ?? item.photo ?? "";
+          const categoryRaw = (item.courseCategory ?? item.category ?? "other").toString().toLowerCase();
+          const category: Course["category"] =
+            categoryRaw.includes("tamil")
+              ? "tamil"
+              : categoryRaw.includes("sinhala")
+              ? "sinhala"
+              : categoryRaw.includes("english")
+              ? "english"
+              : "other";
+          const demoVideo = item.coursedemovideolink ?? item.demo ?? item.demoLink ?? undefined;
+          const mainHeadings: string[] = Array.isArray(item.mainHeadings)
+            ? item.mainHeadings
+            : typeof item.mainHeadings === "string"
+            ? [item.mainHeadings]
+            : [];
+
+          return {
+            id,
+            title,
+            price,
+            duration,
+            image: image || "",
+            description,
+            category,
+            demoVideo,
+            mainHeadings,
+            instructor: item.instructor ?? item.tutor ?? item.teacher ?? "TBA",
+            coursedemovideolink: demoVideo,
+            date: item.date ?? "",
+          };
+        });
+
+        const valid = mapped.filter((m) => m.title);
+        if (valid.length === 0) {
+          setDbEmpty(true);
+          setCourses(FALLBACK_COURSES);
+        } else {
+          setCourses(valid);
+        }
+      } catch (err: any) {
+        console.error("Error fetching courses:", err);
+        setError("Unable to fetch courses from server. Showing default courses.");
+        setCourses(FALLBACK_COURSES);
+      } finally {
+        setTimeout(() => setLoading(false), 150);
+      }
+    };
+
+    fetchCourses();
 
     return () => {
       if (rellaxInstance && typeof rellaxInstance.destroy === "function") rellaxInstance.destroy();
     };
   }, []);
 
+  const tamilCourses = courses.filter((c) => c.category === "tamil");
+  const sinhalaCourses = courses.filter((c) => c.category === "sinhala");
+  const englishCourses = courses.filter((c) => c.category === "english");
+  const otherCourses = courses.filter((c) => !["tamil", "sinhala", "english"].includes(c.category ?? "other"));
+
   const handleSlideClick = (course: Course) => {
     const slug = slugify(course.id || course.title);
-    const target = `/course/${slug}`;
-    if (typeof window !== "undefined") window.location.href = target;
+    navigate(`/course/${slug}`);
   };
 
   const renderSection = (title: string, list: Course[], viewMorePath: string) => {
@@ -89,7 +213,19 @@ const Programmes: React.FC = () => {
             {title}
           </Typography>
 
-          <Typography component="a" href={viewMorePath} sx={{ color: "#0a5397", fontWeight: 700, textDecoration: "none", "&:hover": { textDecoration: "underline" }, fontFamily: "'Montserrat', sans-serif", fontSize: "0.95rem" }}>
+          <Typography
+            component="button"
+            onClick={() => navigate(viewMorePath)}
+            style={{ background: "none", border: "none", cursor: "pointer" }}
+            sx={{
+              color: "#0a5397",
+              fontWeight: 700,
+              textDecoration: "none",
+              "&:hover": { textDecoration: "underline" },
+              fontFamily: "'Montserrat', sans-serif",
+              fontSize: "0.95rem",
+            } as any}
+          >
             View more courses →
           </Typography>
         </Box>
@@ -134,17 +270,18 @@ const Programmes: React.FC = () => {
                       height: "100%",
                       borderRadius: 3,
                       backfaceVisibility: "hidden",
-                      textAlign: "center",
                       boxShadow: 3,
                       backgroundColor: "#fff",
                       overflow: "hidden",
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: "flex-start",
-                      alignItems: "center",
+                      alignItems: "flex-start",
+                      textAlign: "left",
+                      px: 2,
+                      py: 2,
                     }}
                   >
-                    {/* Image banner with overlay and hover zoom (pure sx) */}
                     <Box
                       sx={{
                         width: "100%",
@@ -152,10 +289,9 @@ const Programmes: React.FC = () => {
                         height: 200,
                         borderRadius: 2,
                         overflow: "hidden",
-                        mt: 2,
+                        mt: 0,
                         position: "relative",
                         boxShadow: 2,
-                        // container for background layer
                         "& .image-bg": {
                           position: "absolute",
                           inset: 0,
@@ -165,7 +301,6 @@ const Programmes: React.FC = () => {
                           backgroundPosition: "center",
                           transition: "transform 0.6s ease, filter 0.4s ease",
                         },
-                        // hover zoom
                         "&:hover .image-bg": {
                           transform: "scale(1.08)",
                           filter: "brightness(0.96)",
@@ -173,21 +308,19 @@ const Programmes: React.FC = () => {
                       }}
                     >
                       <Box className="image-bg" />
-                      {/* duration badge */}
-                      <Box sx={{ position: "absolute", top: 10, left: 10, backgroundColor: "rgba(255,255,255,0.95)", color: "#0a5397", px: 1.5, py: 0.35, borderRadius: 1, fontWeight: 700, fontSize: "0.75rem" }}>
-                        {course.duration}
-                      </Box>
                     </Box>
 
-                    <Box sx={{ py: 2, px: 2, width: "100%", maxWidth: 340 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, fontFamily: "'Montserrat', sans-serif" }}>
+                    <Box sx={{ py: 1.2, px: 0, width: "100%", maxWidth: 340 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, fontFamily: "'Montserrat', sans-serif", fontSize: '0.95rem' }}>
                         {course.title}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.4, fontFamily: "'Montserrat', sans-serif" }}>
-                        {course.instructor} • {course.duration}
+
+                      <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.4, fontFamily: "'Montserrat', sans-serif", fontSize: '0.8rem' }}>
+                        {truncate(course.description, 90)}
                       </Typography>
-                      <Typography variant="h6" sx={{ mt: 1.5, fontWeight: 700, color: "#0a5397", fontFamily: "'Montserrat', sans-serif" }}>
-                        {course.price}
+
+                      <Typography variant="body2" sx={{ mt: 1, fontWeight: 700, color: "#0a5397", fontFamily: "'Montserrat', sans-serif", fontSize: '0.85rem' }}>
+                        {course.price ? `Price: LKR ${course.price}` : "Price: —"}
                       </Typography>
                     </Box>
                   </Box>
@@ -206,31 +339,32 @@ const Programmes: React.FC = () => {
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: "space-between",
-                      alignItems: "center",
-                      textAlign: "center",
+                      alignItems: "flex-start",
+                      textAlign: "left",
                       px: 3,
                       boxShadow: 4,
                       py: 3,
                     }}
                   >
                     <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, fontFamily: "'Montserrat', sans-serif" }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, fontFamily: "'Montserrat', sans-serif", fontSize: '1rem' }}>
                         {course.title}
                       </Typography>
-                      <Typography variant="body2" sx={{ lineHeight: 1.6, maxWidth: 280, fontFamily: "'Montserrat', sans-serif", opacity: 0.95 }}>
-                        {course.description}
+
+                      <Typography variant="body2" sx={{ lineHeight: 1.6, maxWidth: 280, fontFamily: "'Montserrat', sans-serif", opacity: 0.95, fontSize: '0.85rem' }}>
+                        {truncate(course.description, 110)}
                       </Typography>
                     </Box>
 
-                    <Box sx={{ width: "100%", display: "flex", gap: 2, justifyContent: "center" }}>
+                    <Box sx={{ width: "100%", display: "flex", gap: 2, justifyContent: "flex-start" }}>
                       <Button
                         variant="contained"
                         onClick={(e) => {
                           e.stopPropagation();
                           const slug = slugify(course.id || course.title);
-                          window.location.href = `/course/${slug}/enroll`;
+                          navigate(`/course/${slug}/enroll`);
                         }}
-                        sx={{ backgroundColor: "#fff", color: "#0a5397", fontWeight: 700, borderRadius: 2, px: 3, py: 1, "&:hover": { backgroundColor: "#f3f3f3" } }}
+                        sx={{ backgroundColor: "#fff", color: "#0a5397", fontWeight: 700, borderRadius: 2, px: 3, py: 1, "&:hover": { backgroundColor: "#f3f3f3" }, fontSize: '0.85rem' }}
                       >
                         Enroll
                       </Button>
@@ -240,9 +374,9 @@ const Programmes: React.FC = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           const slug = slugify(course.id || course.title);
-                          window.location.href = `/course/${slug}`;
+                          navigate(`/course/${slug}`);
                         }}
-                        sx={{ borderColor: "rgba(255,255,255,0.3)", color: "#fff", fontWeight: 600, borderRadius: 2, px: 3, py: 1 }}
+                        sx={{ borderColor: "rgba(255,255,255,0.3)", color: "#fff", fontWeight: 600, borderRadius: 2, px: 3, py: 1, fontSize: '0.85rem' }}
                       >
                         View
                       </Button>
@@ -259,20 +393,48 @@ const Programmes: React.FC = () => {
 
   return (
     <Box sx={{ backgroundColor: "#f9fbff", py: { xs: 6, md: 10 }, position: "relative", overflow: "hidden" }}>
-      {/* Parallax Soft Blue Circle */}
       <Box className="rellax" data-rellax-speed="-2" sx={{ position: "absolute", top: -120, left: -120, width: 420, height: 420, borderRadius: "50%", backgroundColor: "#cce4ff", zIndex: 0 }} />
 
       <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
         <Typography variant="h6" align="center" sx={{ color: "text.secondary", mb: 1, fontWeight: 500, fontFamily: "'Montserrat', sans-serif", textTransform: "uppercase", letterSpacing: 1 }}>
           Programs
         </Typography>
-        <Typography variant="h4" align="center" sx={{ fontWeight: 700, mb: 6, color: "#0a5397", fontFamily: "'Montserrat', sans-serif" }}>
+        <Typography variant="h4" align="center" sx={{ fontWeight: 700, mb: 3, color: "#0a5397", fontFamily: "'Montserrat', sans-serif" }}>
           Popular Courses
         </Typography>
 
-        {renderSection("Tamil Courses", tamilCourses, "/courses/tamil")}
-        {renderSection("Sinhala Courses", sinhalaCourses, "/courses/sinhala")}
-        {renderSection("English Courses", englishCourses, "/courses/english")}
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            {error ? (
+              <Box sx={{ textAlign: "center", mb: 3 }}>
+                <Typography variant="body1" color="error" sx={{ mb: 1 }}>
+                  {error}
+                </Typography>
+                <Button onClick={() => navigate("/courses")} variant="outlined">
+                  View all courses
+                </Button>
+              </Box>
+            ) : dbEmpty ? (
+              <Box sx={{ textAlign: "center", mb: 3 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  No courses found in the database — showing default courses.
+                </Typography>
+                <Button onClick={() => navigate("/courses")} variant="outlined">
+                  View all courses
+                </Button>
+              </Box>
+            ) : null}
+
+            {renderSection("Tamil Courses", tamilCourses, "/courses/tamil")}
+            {renderSection("Sinhala Courses", sinhalaCourses, "/courses/sinhala")}
+            {renderSection("English Courses", englishCourses, "/courses/english")}
+            {renderSection("Other Courses", otherCourses, "/courses")}
+          </>
+        )}
       </Container>
     </Box>
   );

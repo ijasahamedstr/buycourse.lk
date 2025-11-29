@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Carousel from "react-bootstrap/Carousel";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -26,19 +26,31 @@ function Slider() {
 
   const handleSelect = (selectedIndex: number) => setActiveIndex(selectedIndex);
 
-  // Fetch slider images from database
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_HOST}/Slidersection`
-        );
+        const response = await axios.get(`${import.meta.env.VITE_API_HOST}/Slidersection`);
 
-        if (Array.isArray(response.data) && response.data.length > 0) {
-          setSlides(response.data); // Uses slidername + sliderimagelink
+        console.log("Slider API response:", response.data);
+
+        if (Array.isArray(response.data)) {
+          const mapped = response.data.map((item: any) => ({
+            id: item.id,
+            slidername: item.slidername || item.name || "",
+            sliderimagelink:
+              item.sliderimagelink ||
+              item.sliderImageLink ||
+              item.sliderimage ||
+              item.image ||
+              item.url ||
+              item.img ||
+              ""
+          }));
+
+          setSlides(mapped);
         }
       } catch (err) {
-        console.error("Error fetching data: ", err);
+        console.error("Error fetching slider data:", err);
         setError("Failed to load slider images.");
       } finally {
         setTimeout(() => setLoading(false), 300);
@@ -48,7 +60,8 @@ function Slider() {
     fetchData();
   }, []);
 
-  // Custom arrow background circle
+    if (error) return <div>{error}</div>;
+
   const arrowWrapperStyle = {
     backgroundColor: "rgba(0,0,0,0.2)",
     borderRadius: "50%",
