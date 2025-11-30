@@ -429,9 +429,9 @@ const Programmes: React.FC = () => {
               </Box>
             ) : null}
 
-            {renderSection("Tamil Courses", tamilCourses, "/courses/tamil")}
-            {renderSection("Sinhala Courses", sinhalaCourses, "/courses/sinhala")}
-            {renderSection("English Courses", englishCourses, "/courses/english")}
+            {renderSection("Tamil Courses", tamilCourses, "/tamil-courses")}
+            {renderSection("Sinhala Courses", sinhalaCourses, "/sinhala-courses")}
+            {renderSection("English Courses", englishCourses, "/english-courses")}
             {renderSection("Other Courses", otherCourses, "/courses")}
           </>
         )}
