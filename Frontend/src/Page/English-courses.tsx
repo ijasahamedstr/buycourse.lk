@@ -1,97 +1,21 @@
+// src/pages/EnglishCourses.tsx
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import type { CSSProperties } from "react";
 
-/**
- * English Courses Page
- *
- * - Lists only English courses (sample data included)
- * - Card layout, hover lift, equal heights, pagination
- * - Safe dynamic import of Rellax for parallax circle
- */
-
-// Course type
 type Course = {
   id: string;
   title: string;
-  instructor: string;
   price?: string;
   duration?: string;
   image: string;
   description: string;
   category?: string;
+  mainHeadings?: string[];
+  coursedemovideolink?: string;
+  courseCategory?: string;
 };
-
-// Sample English courses — replace with your real data
-const englishCoursesData: Course[] = [
-  {
-    id: "english-communication",
-    title: "English Communication Mastery",
-    instructor: "Ms. Sarah Johnson",
-    price: "LKR 4,999",
-    duration: "4 months",
-    image:
-      "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1600&q=80",
-    description:
-      "Improve speaking, listening and professional writing with practical exercises and live practice sessions.",
-    category: "english",
-  },
-  {
-    id: "english-business",
-    title: "Business English",
-    instructor: "Mr. Arjun",
-    price: "LKR 5,499",
-    duration: "4 months",
-    image:
-      "https://images.unsplash.com/photo-1557800636-894a64c1696f?auto=format&fit=crop&w=1600&q=80",
-    description: "Professional English for meetings, presentations and writing.",
-    category: "english",
-  },
-  {
-    id: "english-academic",
-    title: "Academic English & Essay Writing",
-    instructor: "Dr. Meera",
-    price: "LKR 4,299",
-    duration: "3 months",
-    image:
-      "https://images.unsplash.com/photo-1496317899792-9d7dbcd928a1?auto=format&fit=crop&w=1600&q=80",
-    description: "Structure essays, improve academic vocabulary and research writing skills.",
-    category: "english",
-  },
-  {
-    id: "english-kids",
-    title: "English for Kids",
-    instructor: "Miss Emily",
-    price: "LKR 2,199",
-    duration: "8 weeks",
-    image:
-      "https://images.unsplash.com/photo-1496080174650-637e3f22fa03?auto=format&fit=crop&w=1600&q=80",
-    description: "Fun lessons to build early reading, speaking and listening skills.",
-    category: "english",
-  },
-  {
-    id: "english-interview",
-    title: "Interview & Presentation Skills",
-    instructor: "Mr. Ravi",
-    price: "LKR 3,499",
-    duration: "6 weeks",
-    image:
-      "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=1600&q=80",
-    description: "Build confidence, answer questions clearly and present professionally.",
-    category: "english",
-  },
-  {
-    id: "english-ielts",
-    title: "IELTS Preparation",
-    instructor: "Ms. Priya",
-    price: "LKR 7,499",
-    duration: "8 weeks",
-    image:
-      "https://images.unsplash.com/photo-1514689072236-3a4d0a3d7b1f?auto=format&fit=crop&w=1600&q=80",
-    description: "Focused practice for all four IELTS skills with mock tests and feedback.",
-    category: "english",
-  },
-];
 
 // slugify helper
 const slugify = (text: string) =>
@@ -104,7 +28,11 @@ const slugify = (text: string) =>
     .replace(/[^a-z0-9\-]/g, "")
     .replace(/\-+/g, "-");
 
-// styles (same look as your previous pages)
+// Short description helper
+const shortText = (text: string, max: number = 120) =>
+  text && text.length > max ? text.substring(0, max) + "..." : text;
+
+// styles (unchanged)
 const styles: Record<string, CSSProperties> = {
   sectionWrapper: { position: "relative", overflow: "hidden", zIndex: 1 },
   backgroundCircle: {
@@ -184,14 +112,25 @@ const styles: Record<string, CSSProperties> = {
     color: "#6b7280",
     marginBottom: "8px",
   },
-  description: { fontSize: "0.95rem", color: "#374151", marginBottom: "12px", lineHeight: 1.5 },
+  description: {
+    fontSize: "0.95rem",
+    color: "#374151",
+    marginBottom: "12px",
+    lineHeight: 1.5,
+  },
   readMore: {
     fontSize: "0.92rem",
     color: "#0a5397",
     fontWeight: 600,
     textDecoration: "none",
   },
-  pagination: { marginTop: "32px", display: "flex", justifyContent: "center", gap: "10px", alignItems: "center" },
+  pagination: {
+    marginTop: "32px",
+    display: "flex",
+    justifyContent: "center",
+    gap: "10px",
+    alignItems: "center",
+  },
   pageButton: {
     backgroundColor: "#f3f4f6",
     color: "#111827",
@@ -218,18 +157,13 @@ const styles: Record<string, CSSProperties> = {
 };
 
 const EnglishCourses: React.FC = () => {
-  // use the sample data (filter just the english ones)
-  const englishCourses = englishCoursesData.filter((c) => c.category === "english");
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const coursesPerPage = 6;
-  const totalPages = Math.max(1, Math.ceil(englishCourses.length / coursesPerPage));
-  const indexOfLast = currentPage * coursesPerPage;
-  const indexOfFirst = indexOfLast - coursesPerPage;
-  const currentCourses = englishCourses.slice(indexOfFirst, indexOfLast);
+  const eventsPerPage = 6;
 
-  // parallax ref
   const circleRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -240,15 +174,74 @@ const EnglishCourses: React.FC = () => {
           const mod = await import("rellax");
           const Rellax = mod?.default || mod;
           instance = new Rellax(circleRef.current, { speed: -3, center: false, round: true });
-        } catch {
-          // no-op if rellax isn't installed
-        }
+        } catch {}
       })();
     }
     return () => {
-      if (instance && typeof instance.destroy === "function") instance.destroy();
+      if (instance?.destroy) instance.destroy();
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const resp = await axios.get(`${import.meta.env.VITE_API_HOST}/Couressection`);
+
+        const rawItems: any[] = Array.isArray(resp.data)
+          ? resp.data
+          : Array.isArray(resp.data?.data)
+          ? resp.data.data
+          : [];
+
+        const mapped: Course[] = rawItems
+          .map((item: any, idx: number) => {
+            const courseCategory = (item.courseCategory ?? item.category ?? item.course_category ?? "").toString();
+            return {
+              id: (item.id ?? item._id ?? item.courseId ?? `course-${idx}`).toString(),
+              title: item.courseName ?? item.courseTitle ?? item.title ?? "Untitled course",
+              price: item.coursePrice ?? item.price ?? "",
+              duration: item.duration ?? "—",
+              image:
+                item.courseImage ??
+                item.image ??
+                "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1600&q=80",
+              description: item.courseDescription ?? item.description ?? "",
+              category: courseCategory,
+              mainHeadings: Array.isArray(item.mainHeadings)
+                ? item.mainHeadings
+                : item.mainHeadings
+                ? [item.mainHeadings]
+                : [],
+              coursedemovideolink: item.coursedemovideolink,
+              courseCategory,
+            };
+          })
+          // 🔥 SHOW ENGLISH COURSES ONLY
+          .filter((c: Course) => (c.courseCategory ?? "").toLowerCase() === "english");
+
+        if (!cancelled) setCourses(mapped);
+      } catch (err) {
+        console.error("Failed to fetch courses:", err);
+        if (!cancelled) setError("Failed to load courses. Please try again later.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const totalPages = Math.max(1, Math.ceil(courses.length / eventsPerPage));
+  const indexOfLast = currentPage * eventsPerPage;
+  const indexOfFirst = indexOfLast - eventsPerPage;
+  const currentCourses = courses.slice(indexOfFirst, indexOfLast);
 
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -265,36 +258,56 @@ const EnglishCourses: React.FC = () => {
         <h1 style={styles.title}>English Courses</h1>
         <h2 style={styles.subtitle}>Popular English Programs & Classes</h2>
 
+        {loading ? (
+          <div style={{ marginBottom: 20, color: "#374151" }}>Loading courses…</div>
+        ) : error ? (
+          <div style={{ marginBottom: 20, color: "crimson" }}>{error}</div>
+        ) : courses.length === 0 ? (
+          <div style={{ marginBottom: 20, color: "#374151" }}>No English courses available.</div>
+        ) : null}
+
         <div style={styles.grid}>
           {currentCourses.map((course) => (
             <Link
               key={course.id}
               to={`/course/${slugify(course.id || course.title)}`}
               style={{ textDecoration: "none" }}
+              aria-label={`Open course ${course.title}`}
             >
               <article
                 style={styles.card}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.transform = "translateY(-6px)";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 24px rgba(0,0,0,0.12)";
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.transform = "translateY(-6px)";
+                  el.style.boxShadow = "0 12px 24px rgba(0,0,0,0.12)";
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.transform = "none";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)";
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.transform = "none";
+                  el.style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)";
                 }}
               >
                 <img src={course.image} alt={course.title} style={styles.image} loading="lazy" />
                 <div style={styles.info}>
                   <div>
                     <h3 style={styles.eventName}>{course.title}</h3>
-                    <div style={styles.date}>
-                      {course.instructor} • {course.duration}
-                    </div>
-                    <p style={styles.description}>{course.description}</p>
+                    <div style={styles.date}>Duration : {course.duration} Week</div>
+
+                    <p style={styles.description}>{shortText(course.description)}</p>
                   </div>
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontWeight: 800, color: "#0a5397" }}>{course.price}</div>
+                    
+                    <div
+                      style={{
+                        fontWeight: 800,
+                        color: "#0a5397",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      {course.price ? `LKR ${course.price}` : "LKR —"}
+                    </div>
+
                     <span style={styles.readMore}>View course →</span>
                   </div>
                 </div>
@@ -303,7 +316,6 @@ const EnglishCourses: React.FC = () => {
           ))}
         </div>
 
-        {/* Pagination */}
         <div style={styles.pagination}>
           <button
             style={{ ...(styles.navButton as CSSProperties), ...(currentPage === 1 ? styles.disabled : {}) }}
@@ -329,7 +341,10 @@ const EnglishCourses: React.FC = () => {
           })}
 
           <button
-            style={{ ...(styles.navButton as CSSProperties), ...(currentPage === totalPages ? styles.disabled : {}) }}
+            style={{
+              ...(styles.navButton as CSSProperties),
+              ...(currentPage === totalPages ? styles.disabled : {}),
+            }}
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
             aria-label="next page"

@@ -358,25 +358,13 @@ const Programmes: React.FC = () => {
 
                     <Box sx={{ width: "100%", display: "flex", gap: 2, justifyContent: "flex-start" }}>
                       <Button
-                        variant="contained"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const slug = slugify(course.id || course.title);
-                          navigate(`/course/${slug}/enroll`);
-                        }}
-                        sx={{ backgroundColor: "#fff", color: "#0a5397", fontWeight: 700, borderRadius: 2, px: 3, py: 1, "&:hover": { backgroundColor: "#f3f3f3" }, fontSize: '0.85rem' }}
-                      >
-                        Enroll
-                      </Button>
-
-                      <Button
                         variant="outlined"
                         onClick={(e) => {
                           e.stopPropagation();
                           const slug = slugify(course.id || course.title);
                           navigate(`/course/${slug}`);
                         }}
-                        sx={{ borderColor: "rgba(255,255,255,0.3)", color: "#fff", fontWeight: 600, borderRadius: 2, px: 3, py: 1, fontSize: '0.85rem' }}
+                        sx={{ backgroundColor: "#fff", color: "#0a5397", fontWeight: 700, borderRadius: 2, px: 3, py: 1, "&:hover": { backgroundColor: "#f3f3f3" }, fontSize: '0.85rem' }}
                       >
                         View
                       </Button>

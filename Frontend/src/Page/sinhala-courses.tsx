@@ -1,268 +1,360 @@
-import { useEffect, useState } from "react";
+// src/pages/TamilCourses.tsx  (You can rename the file later if needed)
+import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import axios from "axios";
+import type { CSSProperties } from "react";
 
-type Service = {
+type Course = {
   id: string;
   title: string;
-  originalPrice: number;
-  discountPrice?: number;
-  discount?: string;
-  rating?: number;
+  price?: string;
+  duration?: string;
   image: string;
-  status: "available" | "out-of-stock" | "best-value" | "trending";
+  description: string;
+  category?: string;
+  mainHeadings?: string[];
+  coursedemovideolink?: string;
+  courseCategory?: string;
 };
 
-const servicesData: Service[] = [
-  { id: "netflix-4k", title: "Netflix Premium 4K UHD", originalPrice: 25.99, discountPrice: 14.9, image: "https://shopallpremium.com/wp-content/uploads/2022/02/netflix.jpg.webp", status: "available" },
-  { id: "amazon-prime-video", title: "Amazon Prime Video", originalPrice: 10.5, discountPrice: 1.26, image: "https://shopallpremium.com/wp-content/uploads/2022/02/primevideo.png.webp", status: "trending" },
-  { id: "spotify-premium", title: "Spotify Premium", originalPrice: 9.99, discountPrice: 2.69, image: "https://shopallpremium.com/wp-content/uploads/2022/02/45cc6c91692a3665d97b570a3272132a.jpg", status: "out-of-stock" },
-  { id: "youtube-premium-in", title: "YouTube Premium (India)", originalPrice: 17.38, discountPrice: 8.78, image: "https://shopallpremium.com/wp-content/uploads/2022/02/YouTube-Premium-512x512-1.png.webp", status: "available" },
-  { id: "altbalaji-premium", title: "ALTBalaji Premium", originalPrice: 17.58, discountPrice: 0.76, image: "https://shopallpremium.com/wp-content/uploads/2022/02/altbalaji.png.webp", status: "available" },
-  { id: "hma-vpn", title: "HMA VPN", originalPrice: 19.99, discountPrice: 12.49, image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-33.png", status: "available" },
-];
+// slugify helper
+const slugify = (text: string) =>
+  text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9\-]/g, "")
+    .replace(/\-+/g, "-");
 
-const heroSlides = [
-  "https://shopallpremium.com/wp-content/uploads/2022/02/netflix.jpg.webp",
-  "https://shopallpremium.com/wp-content/uploads/2022/02/primevideo.png.webp",
-  "https://shopallpremium.com/wp-content/uploads/2022/02/45cc6c91692a3665d97b570a3272132a.jpg",
-];
+// Short description helper
+const shortText = (text: string, max: number = 120) =>
+  text && text.length > max ? text.substring(0, max) + "..." : text;
 
-const formatPrice = (price: number) => `₹${price.toFixed(2)}`;
+// styles (unchanged)
+const styles: Record<string, CSSProperties> = {
+  sectionWrapper: { position: "relative", overflow: "hidden", zIndex: 1 },
+  backgroundCircle: {
+    position: "absolute",
+    top: "-120px",
+    left: "-120px",
+    width: "420px",
+    height: "420px",
+    borderRadius: "50%",
+    backgroundColor: "#e3f2fd",
+    zIndex: 0,
+  },
+  container: {
+    position: "relative",
+    backgroundColor: "#fff",
+    padding: "48px 5%",
+    textAlign: "center",
+    fontFamily: "'Poppins', sans-serif",
+    zIndex: 1,
+  },
+  title: {
+    fontSize: "2.25rem",
+    fontWeight: 700,
+    color: "#111827",
+    marginBottom: "0.25rem",
+    fontFamily: "'Montserrat', sans-serif",
+  },
+  subtitle: {
+    fontSize: "1.15rem",
+    fontWeight: 600,
+    color: "#4b5563",
+    marginBottom: "1.75rem",
+    fontFamily: "'Montserrat', sans-serif",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gap: "24px",
+    maxWidth: "1200px",
+    margin: "0 auto",
+    alignItems: "stretch",
+  },
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: "12px",
+    overflow: "hidden",
+    boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+    textAlign: "left",
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
+    transition: "transform 0.28s ease, box-shadow 0.28s ease",
+  },
+  image: {
+    width: "100%",
+    height: "180px",
+    objectFit: "cover",
+    display: "block",
+  },
+  info: {
+    padding: "16px",
+    color: "#111827",
+    fontFamily: "'Montserrat', sans-serif",
+    flexGrow: 1,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+  },
+  eventName: {
+    fontSize: "1.05rem",
+    fontWeight: 700,
+    margin: "0 0 8px 0",
+    color: "#0a5397",
+  },
+  date: {
+    fontSize: "0.9rem",
+    color: "#6b7280",
+    marginBottom: "8px",
+  },
+  description: {
+    fontSize: "0.95rem",
+    color: "#374151",
+    marginBottom: "12px",
+    lineHeight: 1.5,
+  },
+  readMore: {
+    fontSize: "0.92rem",
+    color: "#0a5397",
+    fontWeight: 600,
+    textDecoration: "none",
+  },
+  pagination: {
+    marginTop: "32px",
+    display: "flex",
+    justifyContent: "center",
+    gap: "10px",
+    alignItems: "center",
+  },
+  pageButton: {
+    backgroundColor: "#f3f4f6",
+    color: "#111827",
+    border: "1px solid #d1d5db",
+    width: "40px",
+    height: "40px",
+    borderRadius: "50%",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: "0.9rem",
+  },
+  activePage: { backgroundColor: "#0a5397", color: "#fff", border: "1px solid #0a5397" },
+  navButton: {
+    backgroundColor: "#f3f4f6",
+    color: "#111827",
+    border: "none",
+    borderRadius: "50%",
+    width: "40px",
+    height: "40px",
+    cursor: "pointer",
+    fontWeight: 600,
+  },
+  disabled: { opacity: 0.4, cursor: "not-allowed" },
+};
 
-export default function PremiumSimpleHero() {
-  const [activeIndex, setActiveIndex] = useState(0);
+const SinhalaCourses: React.FC = () => {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const eventsPerPage = 6;
+
+  const circleRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % heroSlides.length);
-    }, 4000);
-    return () => clearInterval(interval);
+    let instance: any = null;
+    if (typeof window !== "undefined" && circleRef.current) {
+      (async () => {
+        try {
+          const mod = await import("rellax");
+          const Rellax = mod?.default || mod;
+          instance = new Rellax(circleRef.current, { speed: -3, center: false, round: true });
+        } catch {}
+      })();
+    }
+    return () => {
+      if (instance?.destroy) instance.destroy();
+    };
   }, []);
 
-  const css = `
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+  useEffect(() => {
+    let cancelled = false;
 
-    * {
-      font-family: "Montserrat", sans-serif !important;
+    (async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const resp = await axios.get(`${import.meta.env.VITE_API_HOST}/Couressection`);
+
+        const rawItems: any[] = Array.isArray(resp.data)
+          ? resp.data
+          : Array.isArray(resp.data?.data)
+          ? resp.data.data
+          : [];
+
+        const mapped: Course[] = rawItems
+          .map((item: any, idx: number) => {
+            const courseCategory = (item.courseCategory ?? item.category ?? item.course_category ?? "").toString();
+            return {
+              id: (item.id ?? item._id ?? item.courseId ?? `course-${idx}`).toString(),
+              title: item.courseName ?? item.courseTitle ?? item.title ?? "Untitled course",
+              price: item.coursePrice ?? item.price ?? "",
+              duration: item.duration ?? "—",
+              image:
+                item.courseImage ??
+                item.image ??
+                "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1600&q=80",
+              description: item.courseDescription ?? item.description ?? "",
+              category: courseCategory,
+              mainHeadings: Array.isArray(item.mainHeadings)
+                ? item.mainHeadings
+                : item.mainHeadings
+                ? [item.mainHeadings]
+                : [],
+              coursedemovideolink: item.coursedemovideolink,
+              courseCategory,
+            };
+          })
+          // 🔥 SHOW SINHALA COURSES ONLY
+          .filter((c: Course) => (c.courseCategory ?? "").toLowerCase() === "sinhala");
+
+        if (!cancelled) setCourses(mapped);
+      } catch (err) {
+        console.error("Failed to fetch courses:", err);
+        if (!cancelled) setError("Failed to load courses. Please try again later.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const totalPages = Math.max(1, Math.ceil(courses.length / eventsPerPage));
+  const indexOfLast = currentPage * eventsPerPage;
+  const indexOfFirst = indexOfLast - eventsPerPage;
+  const currentCourses = courses.slice(indexOfFirst, indexOfLast);
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-
-    :root{ 
-      --text-dark:#1a1a1a;
-      --text-light:#555;
-      --border:#e5e7eb;
-      --card-bg:#ffffff;
-    }
-
-    .page-wrap{ 
-      padding:48px 5%; 
-      background:#ffffff;   /* White Background */
-      min-height:100vh; 
-      color:var(--text-dark);
-    }
-
-    .layout{ 
-      max-width:1180px; 
-      margin:0 auto; 
-      display:grid; 
-      grid-template-columns:1fr 320px; 
-      gap:26px; 
-    }
-
-    /* HERO SLIDER (same sizes, only overlay stronger) */
-    .hero-slider{
-      position:relative;
-      height:520px;
-      border-radius:12px;
-      overflow:hidden;
-      box-shadow:0 12px 36px rgba(0,0,0,0.15);
-    }
-
-    .slide{
-      position:absolute; inset:0;
-      background-size:cover;
-      background-position:center;
-      opacity:0;
-      transition:opacity 1s ease-in-out;
-    }
-
-    .slide.active{ opacity:1; }
-
-    /* Stronger gradient overlay */
-    .hero-slider::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:linear-gradient(
-        to bottom, 
-        rgba(0,0,0,0.0), 
-        rgba(0,0,0,0.75)
-      );
-      z-index:10;
-    }
-
-    .hero-content{
-      position:absolute; 
-      bottom:20px; 
-      left:20px;
-      color:#fff; 
-      z-index:20;
-    }
-
-    .hero-content h3{ 
-      margin:0; 
-      font-size:2rem; 
-      font-weight:800; 
-    }
-
-    .hero-content p{ 
-      margin-top:6px; 
-      font-weight:500; 
-      font-size:1.05rem; 
-    }
-
-    /* DOTS (same style) */
-    .dots{
-      position:absolute; bottom:12px; right:20px;
-      display:flex; gap:8px; 
-      z-index:30;
-    }
-
-    .dot{
-      width:10px; height:10px;
-      background:#ffffff80;
-      border-radius:50%;
-      cursor:pointer;
-      border:2px solid #fff;
-    }
-    .dot.active{ background:#fff; }
-
-    /* SIDEBAR — White Card */
-    .sidebar{
-      background:var(--card-bg);
-      border-radius:12px;
-      padding:18px;
-      border:1px solid var(--border);
-    }
-
-    .sidebar h3{
-      margin:0 0 12px; 
-      font-size:1.05rem; 
-      font-weight:700; 
-      color:var(--text-dark);
-    }
-
-    /* DISCOUNT ITEMS — modern soft style */
-    .discount-list{
-      display:flex; 
-      flex-direction:column; 
-      gap:12px;
-    }
-
-    .discount-item{
-      display:flex; 
-      gap:12px; 
-      align-items:center; 
-      padding:10px; 
-      border-radius:10px;
-      background:#f9fafb;
-      border:1px solid #e5e7eb;
-      transition:0.2s ease;
-    }
-
-    .discount-item:hover{
-      background:#f3f4f6;
-    }
-
-    .discount-thumb{
-      width:56px; 
-      height:56px; 
-      border-radius:8px; 
-      overflow:hidden; 
-      background:#eee;
-      display:flex; 
-      align-items:center; 
-      justify-content:center; 
-    }
-
-    .discount-thumb img{
-      width:100%; height:100%; object-fit:cover;
-    }
-
-    .discount-meta .name{
-      font-weight:600; 
-      font-size:0.92rem; 
-      color:var(--text-dark);
-    }
-
-    .discount-meta .price{
-      font-weight:700; 
-      color:#7c3aed; 
-    }
-
-    @media(max-width:800px){
-      .layout{ grid-template-columns:1fr; }
-      .hero-slider{ height:300px; }
-    }
-  `;
-
-  const fallbackImage = "/images/placeholder.svg";
+  };
 
   return (
-    <div className="page-wrap">
-      <style>{css}</style>
+    <section style={styles.sectionWrapper}>
+      <div ref={circleRef} style={styles.backgroundCircle} />
 
-      <div className="layout">
+      <div style={styles.container}>
+        <h1 style={styles.title}>Sinhala Courses</h1>
+        <h2 style={styles.subtitle}>Popular Sinhala Programs & Classes</h2>
 
-        {/* HERO IMAGE SLIDER */}
-        <div className="hero-slider">
-          {heroSlides.map((img, i) => (
-            <div
-              key={i}
-              className={`slide ${i === activeIndex ? "active" : ""}`}
-              style={{ backgroundImage: `url(${img})` }}
-            />
+        {loading ? (
+          <div style={{ marginBottom: 20, color: "#374151" }}>Loading courses…</div>
+        ) : error ? (
+          <div style={{ marginBottom: 20, color: "crimson" }}>{error}</div>
+        ) : courses.length === 0 ? (
+          <div style={{ marginBottom: 20, color: "#374151" }}>No Sinhala courses available.</div>
+        ) : null}
+
+        <div style={styles.grid}>
+          {currentCourses.map((course) => (
+            <Link
+              key={course.id}
+              to={`/course/${slugify(course.id || course.title)}`}
+              style={{ textDecoration: "none" }}
+              aria-label={`Open course ${course.title}`}
+            >
+              <article
+                style={styles.card}
+                onMouseEnter={(e) => {
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.transform = "translateY(-6px)";
+                  el.style.boxShadow = "0 12px 24px rgba(0,0,0,0.12)";
+                }}
+                onMouseLeave={(e) => {
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.transform = "none";
+                  el.style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)";
+                }}
+              >
+                <img src={course.image} alt={course.title} style={styles.image} loading="lazy" />
+                <div style={styles.info}>
+                  <div>
+                    <h3 style={styles.eventName}>{course.title}</h3>
+                    <div style={styles.date}>Duration : {course.duration} Week</div>
+
+                    <p style={styles.description}>{shortText(course.description)}</p>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    
+                    <div
+                      style={{
+                        fontWeight: 800,
+                        color: "#0a5397",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      {course.price ? `LKR ${course.price}` : "LKR —"}
+                    </div>
+
+                    <span style={styles.readMore}>View course →</span>
+                  </div>
+                </div>
+              </article>
+            </Link>
           ))}
-
-          <div className="hero-content">
-            <h3>Featured — Streaming & Premium Offers</h3>
-            <p>Exclusive offers updated daily. Best prices guaranteed.</p>
-          </div>
-
-          <div className="dots">
-            {heroSlides.map((_, i) => (
-              <button
-                key={i}
-                className={`dot ${activeIndex === i ? "active" : ""}`}
-                onClick={() => setActiveIndex(i)}
-              />
-            ))}
-          </div>
         </div>
 
-        {/* DISCOUNTED SIDEBAR */}
-        <aside className="sidebar">
-          <h3 style={{}}>Discounted</h3>
+        <div style={styles.pagination}>
+          <button
+            style={{ ...(styles.navButton as CSSProperties), ...(currentPage === 1 ? styles.disabled : {}) }}
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            aria-label="previous page"
+          >
+            ‹
+          </button>
 
-          <div className="discount-list">
-            {servicesData.slice(0, 6).map((s) => (
-              <div key={s.id} className="discount-item">
-                <div className="discount-thumb">
-                  <img
-                    src={s.image}
-                    alt={s.title}
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = fallbackImage; }}
-                  />
-                </div>
+          {[...Array(totalPages)].map((_, i) => {
+            const page = i + 1;
+            return (
+              <button
+                key={page}
+                style={{ ...(styles.pageButton as CSSProperties), ...(currentPage === page ? styles.activePage : {}) }}
+                onClick={() => goToPage(page)}
+                aria-current={currentPage === page ? "page" : undefined}
+              >
+                {page}
+              </button>
+            );
+          })}
 
-                <div className="discount-meta">
-                  <div className="name">{s.title}</div>
-                  <div className="price">{formatPrice(s.discountPrice ?? s.originalPrice)}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </aside>
-
+          <button
+            style={{
+              ...(styles.navButton as CSSProperties),
+              ...(currentPage === totalPages ? styles.disabled : {}),
+            }}
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            aria-label="next page"
+          >
+            ›
+          </button>
+        </div>
       </div>
-    </div>
+    </section>
   );
-}
+};
+
+export default SinhalaCourses;

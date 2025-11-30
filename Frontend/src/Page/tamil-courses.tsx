@@ -1,101 +1,21 @@
+// src/pages/TamilCourses.tsx
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import type { CSSProperties } from "react";
 
-/**
- * Tamil Courses Page
- *
- * - Lists only Tamil courses (sample data included)
- * - Card layout, hover lift, equal heights, pagination
- * - Safe dynamic import of Rellax for parallax circle
- */
-
-// Course type
 type Course = {
   id: string;
   title: string;
-  instructor: string;
   price?: string;
   duration?: string;
   image: string;
   description: string;
   category?: string;
+  mainHeadings?: string[];
+  coursedemovideolink?: string;
+  courseCategory?: string;
 };
-
-// Sample Tamil courses — replace with your real data
-const tamilCoursesData: Course[] = [
-  {
-    id: "tamil-beginner",
-    title: "Tamil Language — Beginner",
-    instructor: "Prof. Ananda",
-    price: "LKR 3,499",
-    duration: "3 months",
-    image:
-      "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1600&q=80",
-    description:
-      "Start speaking Tamil confidently. Covers basics of reading, writing and conversation with practical lessons.",
-    category: "tamil",
-  },
-  {
-    id: "tamil-intermediate",
-    title: "Tamil Conversation — Intermediate",
-    instructor: "Ms. Kavya",
-    price: "LKR 4,499",
-    duration: "3 months",
-    image:
-      "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=1600&q=80",
-    description: "Practice real-life Tamil conversations and expand vocabulary.",
-    category: "tamil",
-  },
-  {
-    id: "tamil-grammar",
-    title: "Tamil Grammar & Writing",
-    instructor: "Dr. Selvi",
-    price: "LKR 3,999",
-    duration: "2 months",
-    image:
-      "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1600&q=80",
-    description:
-      "Structured lessons on grammar, script and composition for confident writing.",
-    category: "tamil",
-  },
-  {
-    id: "tamil-advanced",
-    title: "Advanced Tamil Literature",
-    instructor: "Prof. Kumar",
-    price: "LKR 6,499",
-    duration: "4 months",
-    image:
-      "https://images.unsplash.com/photo-1517638808067-8f7f2f4b8a04?auto=format&fit=crop&w=1600&q=80",
-    description:
-      "Explore classical and contemporary Tamil literature, critical analysis and essays.",
-    category: "tamil",
-  },
-  {
-    id: "tamil-kids",
-    title: "Tamil for Kids",
-    instructor: "Miss Nisha",
-    price: "LKR 2,199",
-    duration: "2 months",
-    image:
-      "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1600&q=80",
-    description:
-      "Fun, interactive Tamil lessons for children — songs, stories and activities.",
-    category: "tamil",
-  },
-  {
-    id: "tamil-speaker",
-    title: "Tamil Speaking Bootcamp",
-    instructor: "Mr. Arul",
-    price: "LKR 2,999",
-    duration: "6 weeks",
-    image:
-      "https://images.unsplash.com/photo-1524253482453-3fed8d2fe12b?auto=format&fit=crop&w=1600&q=80",
-    description:
-      "Focused speaking practice to rapidly improve conversational fluency.",
-    category: "tamil",
-  },
-];
 
 // slugify helper
 const slugify = (text: string) =>
@@ -108,7 +28,11 @@ const slugify = (text: string) =>
     .replace(/[^a-z0-9\-]/g, "")
     .replace(/\-+/g, "-");
 
-// styles (converted from your News styles)
+// Short description helper
+const shortText = (text: string, max: number = 120) =>
+  text && text.length > max ? text.substring(0, max) + "..." : text;
+
+// styles (unchanged)
 const styles: Record<string, CSSProperties> = {
   sectionWrapper: { position: "relative", overflow: "hidden", zIndex: 1 },
   backgroundCircle: {
@@ -188,14 +112,25 @@ const styles: Record<string, CSSProperties> = {
     color: "#6b7280",
     marginBottom: "8px",
   },
-  description: { fontSize: "0.95rem", color: "#374151", marginBottom: "12px", lineHeight: 1.5 },
+  description: {
+    fontSize: "0.95rem",
+    color: "#374151",
+    marginBottom: "12px",
+    lineHeight: 1.5,
+  },
   readMore: {
     fontSize: "0.92rem",
     color: "#0a5397",
     fontWeight: 600,
     textDecoration: "none",
   },
-  pagination: { marginTop: "32px", display: "flex", justifyContent: "center", gap: "10px", alignItems: "center" },
+  pagination: {
+    marginTop: "32px",
+    display: "flex",
+    justifyContent: "center",
+    gap: "10px",
+    alignItems: "center",
+  },
   pageButton: {
     backgroundColor: "#f3f4f6",
     color: "#111827",
@@ -222,18 +157,13 @@ const styles: Record<string, CSSProperties> = {
 };
 
 const TamilCourses: React.FC = () => {
-  // use the sample data (filter just the tamil ones)
-  const tamilCourses = tamilCoursesData.filter((c) => c.category === "tamil");
+  const [tamilCourses, setTamilCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
   const eventsPerPage = 6;
-  const totalPages = Math.max(1, Math.ceil(tamilCourses.length / eventsPerPage));
-  const indexOfLast = currentPage * eventsPerPage;
-  const indexOfFirst = indexOfLast - eventsPerPage;
-  const currentCourses = tamilCourses.slice(indexOfFirst, indexOfLast);
 
-  // parallax ref
   const circleRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -244,15 +174,71 @@ const TamilCourses: React.FC = () => {
           const mod = await import("rellax");
           const Rellax = mod?.default || mod;
           instance = new Rellax(circleRef.current, { speed: -3, center: false, round: true });
-        } catch {
-          // no-op if rellax isn't installed
-        }
+        } catch {}
       })();
     }
     return () => {
-      if (instance && typeof instance.destroy === "function") instance.destroy();
+      if (instance?.destroy) instance.destroy();
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const resp = await axios.get(`${import.meta.env.VITE_API_HOST}/Couressection`);
+
+        const rawItems: any[] = Array.isArray(resp.data)
+          ? resp.data
+          : Array.isArray(resp.data?.data)
+          ? resp.data.data
+          : [];
+
+        const mapped: Course[] = rawItems
+          .map((item: any, idx: number) => {
+            const courseCategory = (item.courseCategory ?? item.category ?? item.course_category ?? "").toString();
+            return {
+              id: (item.id ?? item._id ?? item.courseId ?? `course-${idx}`).toString(),
+              title: item.courseName ?? item.courseTitle ?? item.title ?? "Untitled course",
+              price: item.coursePrice ?? item.price ?? "",
+              duration: item.duration ?? "—",
+              image:
+                item.courseImage ??
+                item.image ??
+                "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1600&q=80",
+              description: item.courseDescription ?? item.description ?? "",
+              category: courseCategory,
+              mainHeadings: Array.isArray(item.mainHeadings)
+                ? item.mainHeadings
+                : item.mainHeadings
+                ? [item.mainHeadings]
+                : [],
+              coursedemovideolink: item.coursedemovideolink,
+              courseCategory,
+            };
+          })
+          .filter((c: Course) => (c.category ?? "").toLowerCase() === "tamil");
+
+        if (!cancelled) setTamilCourses(mapped);
+      } catch (err) {
+        console.error("Failed to fetch courses:", err);
+        if (!cancelled) setError("Failed to load courses. Please try again later.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const totalPages = Math.max(1, Math.ceil(tamilCourses.length / eventsPerPage));
+  const indexOfLast = currentPage * eventsPerPage;
+  const indexOfFirst = indexOfLast - eventsPerPage;
+  const currentCourses = tamilCourses.slice(indexOfFirst, indexOfLast);
 
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -269,34 +255,59 @@ const TamilCourses: React.FC = () => {
         <h1 style={styles.title}>Tamil Courses</h1>
         <h2 style={styles.subtitle}>Popular Tamil Programs & Classes</h2>
 
+        {loading ? (
+          <div style={{ marginBottom: 20, color: "#374151" }}>Loading courses…</div>
+        ) : error ? (
+          <div style={{ marginBottom: 20, color: "crimson" }}>{error}</div>
+        ) : tamilCourses.length === 0 ? (
+          <div style={{ marginBottom: 20, color: "#374151" }}>No Tamil courses available.</div>
+        ) : null}
+
         <div style={styles.grid}>
           {currentCourses.map((course) => (
             <Link
               key={course.id}
               to={`/course/${slugify(course.id || course.title)}`}
               style={{ textDecoration: "none" }}
+              aria-label={`Open course ${course.title}`}
             >
               <article
                 style={styles.card}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.transform = "translateY(-6px)";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 24px rgba(0,0,0,0.12)";
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.transform = "translateY(-6px)";
+                  el.style.boxShadow = "0 12px 24px rgba(0,0,0,0.12)";
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.transform = "none";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)";
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.transform = "none";
+                  el.style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)";
                 }}
               >
                 <img src={course.image} alt={course.title} style={styles.image} loading="lazy" />
                 <div style={styles.info}>
                   <div>
                     <h3 style={styles.eventName}>{course.title}</h3>
-                    <div style={styles.date}>{course.instructor} • {course.duration}</div>
-                    <p style={styles.description}>{course.description}</p>
+                    <div style={styles.date}>
+                      Duration : {course.duration} Week
+                    </div>
+
+                    <p style={styles.description}>{shortText(course.description)}</p>
                   </div>
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontWeight: 800, color: "#0a5397" }}>{course.price}</div>
+                    
+                    {/* SMALL PRICE FONT */}
+                    <div
+                      style={{
+                        fontWeight: 800,
+                        color: "#0a5397",
+                        fontSize: "0.85rem",  // <-- SMALL PRICE TEXT
+                      }}
+                    >
+                      {course.price ? `LKR ${course.price}` : "LKR —"}
+                    </div>
+
                     <span style={styles.readMore}>View course →</span>
                   </div>
                 </div>
@@ -305,7 +316,6 @@ const TamilCourses: React.FC = () => {
           ))}
         </div>
 
-        {/* Pagination */}
         <div style={styles.pagination}>
           <button
             style={{ ...(styles.navButton as CSSProperties), ...(currentPage === 1 ? styles.disabled : {}) }}
@@ -331,7 +341,10 @@ const TamilCourses: React.FC = () => {
           })}
 
           <button
-            style={{ ...(styles.navButton as CSSProperties), ...(currentPage === totalPages ? styles.disabled : {}) }}
+            style={{
+              ...(styles.navButton as CSSProperties),
+              ...(currentPage === totalPages ? styles.disabled : {}),
+            }}
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
             aria-label="next page"
