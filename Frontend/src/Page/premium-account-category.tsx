@@ -110,7 +110,7 @@ export default function AllAccountsWithCategory() {
   const CARD_WIDTH = 320;
   const CARD_HEIGHT = 160;
 
-  const cardOuterStyle = (bgImage: string): React.CSSProperties => ({
+  const cardOuterStyle = (): React.CSSProperties => ({
     flex: `0 0 ${CARD_WIDTH}px`,
     width: `${CARD_WIDTH}px`,
     height: `${CARD_HEIGHT}px`,
@@ -215,7 +215,7 @@ export default function AllAccountsWithCategory() {
     { image: "https://via.placeholder.com/497x225.png?text=streaming-combos", original: "https://shopallpremium.com/wp-content/uploads/2022/02/altbalaji.png.webp", title: "Streaming Combos", desc: "Combo subscriptions" },
     { image: "https://shopallpremium.com/wp-content/uploads/2022/02/altbalaji.png.webp", title: "Utilities", desc: "Useful tools & apps" },
     { image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-33.png", title: "VPN", desc: "Secure VPN plans" },
-     { image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-33.png", title: "AI", desc: "AI" },
+    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-33.png", title: "AI", desc: "AI" },
   ];
 
   // data fetching (unchanged)
@@ -350,7 +350,6 @@ export default function AllAccountsWithCategory() {
   const clearCategoryFilter = () => setCategoryFilter("");
 
   const fallbackImage = placeholderImage;
-  const readableTitle = categoryFilter ? categoryFilter.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : slugToReadable(activeSlug);
 
   // handler used by card button
   const onCardView = (card: Card) => {
@@ -399,7 +398,7 @@ export default function AllAccountsWithCategory() {
                   onCardView(card);
                 }}
               >
-                <div style={cardOuterStyle(card.image)} aria-hidden={false}>
+                <div style={cardOuterStyle()} aria-hidden={false}>
                   {/* left area: title, desc, view button */}
                   <div style={leftContentStyle}>
                     <div>
