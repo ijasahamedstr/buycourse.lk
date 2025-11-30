@@ -9,6 +9,7 @@ import EnglishCourses from './Page/English-courses';
 import PremiumAccountService from './Page/PremiumAccountService';
 import CoursePage from './Page/Couresview';
 import AllAccountsWithCategory from './Page/premium-account-category';
+import PremiumAccountView from './Page/premium-account-View';
 
 function App() {
 
@@ -24,6 +25,7 @@ function App() {
         <Route path="/english-courses" element={<EnglishCourses/>} />
         <Route path="/premium-account-service" element={<PremiumAccountService/>} />
         <Route path="/course/:slug" element={<CoursePage />} />
+        <Route path="/service/:slug" element={<PremiumAccountView />} />
         <Route path="/category/:slug" element={<AllAccountsWithCategory/>} />
         {/* Add routes for settings if needed */}
       </Routes>

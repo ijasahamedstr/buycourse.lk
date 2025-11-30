@@ -6,13 +6,13 @@ export const OttServiceCreate = async (req, res) => {
   const {
     ottServiceName,
     description,
-    planDurations,          // optional array
-    images,                 // optional array
-    accessLicenseTypes,     // optional array
-    videoQuality,           // optional string
+    planDurations,       
+    images,            
+    accessLicenseTypes,    
+    videoQuality,         
     price,
-    discountedPrice,        // optional price after discount
-    category                // NEW FIELD
+    discountedPrice,      
+    category                
   } = req.body;
 
   // Minimal required validation

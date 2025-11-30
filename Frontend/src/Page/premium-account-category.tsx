@@ -1,5 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+// AllAccountsWithCategory.tsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
 import "../Page/CSS/PremiumSimpleHero.css";
 
 type Service = {
@@ -11,104 +13,47 @@ type Service = {
   rating?: number;
   image: string;
   status: "available" | "out-of-stock" | "best-value" | "trending";
+  description?: string;
+  planDurations?: string[] | number[];
+  images?: string[];
+  accessLicenseTypes?: string[];
+  videoQuality?: string;
+  category?: string;
+  createdAt?: string;
 };
 
-const servicesData: Service[] = [
-  { id: "netflix-4k", title: "Netflix Premium 4K UHD", originalPrice: 2590, discountPrice: 1490, image: "https://shopallpremium.com/wp-content/uploads/2022/02/netflix.jpg.webp", status: "available" },
-  { id: "amazon-prime-video", title: "Amazon Prime Video", originalPrice: 1050, discountPrice: 260, image: "https://shopallpremium.com/wp-content/uploads/2022/02/primevideo.png.webp", status: "trending" },
-  { id: "spotify-premium", title: "Spotify Premium", originalPrice: 999, discountPrice: 269, image: "https://shopallpremium.com/wp-content/uploads/2022/02/45cc6c91692a3665d97b570a3272132a.jpg", status: "out-of-stock" },
-  { id: "youtube-premium-in", title: "YouTube Premium (India)", originalPrice: 1738, discountPrice: 878, image: "https://shopallpremium.com/wp-content/uploads/2022/02/YouTube-Premium-512x512-1.png.webp", status: "available" },
-  { id: "altbalaji-premium", title: "ALTBalaji Premium", originalPrice: 1758, discountPrice: 760, image: "https://shopallpremium.com/wp-content/uploads/2022/02/altbalaji.png.webp", status: "available" },
-  { id: "hma-vpn", title: "HMA VPN", originalPrice: 1999, discountPrice: 1249, image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-33.png", status: "available" },
-];
-
-const heroSlides = [
-  "https://shopallpremium.com/wp-content/uploads/2022/02/netflix.jpg.webp",
-  "https://shopallpremium.com/wp-content/uploads/2022/02/primevideo.png.webp",
-  "https://shopallpremium.com/wp-content/uploads/2022/02/45cc6c91692a3665d97b570a3272132a.jpg",
-];
-
-// Proper Sri Lankan Rupee format (LKR 1,490.00)
 const formatPrice = (price: number) =>
   `LKR ${price.toLocaleString("en-LK", { minimumFractionDigits: 2 })}`;
 
 interface Card {
-  image: string;      // background image (large)
-  original?: string;  // original service image (thumbnail, optional)
+  image: string;
+  original?: string;
   title?: string;
   desc?: string;
 }
 
-const cards: Card[] = [
-  {
-    image: "https://via.placeholder.com/497x225.png?text=digital-keys",
-    original: servicesData.find(s => s.id === "altbalaji-premium")?.image,
-    title: "Digital Keys",
-    desc: "License keys & top-ups"
-  },
-  {
-    image: "https://via.placeholder.com/497x225.png?text=games",
-    original: servicesData.find(s => s.id === "spotify-premium")?.image,
-    title: "Games",
-    desc: "Top game codes & bundles"
-  },
-  {
-    image: "https://via.placeholder.com/497x225.png?text=ott",
-    original: servicesData.find(s => s.id === "netflix-4k")?.image,
-    title: "OTT",
-    desc: "Streaming services"
-  },
-  {
-    image: "https://via.placeholder.com/497x225.png?text=premium",
-    original: servicesData.find(s => s.id === "youtube-premium-in")?.image,
-    title: "Premium",
-    desc: "Premium plans & upgrades"
-  },
-  {
-    image: "https://via.placeholder.com/497x225.png?text=streaming-combos",
-    original: servicesData.find(s => s.id === "amazon-prime-video")?.image,
-    title: "Streaming Combos",
-    desc: "Combo subscriptions"
-  },
-  {
-    image: "https://via.placeholder.com/497x225.png?text=utilities",
-    original: undefined,
-    title: "Utilities",
-    desc: "Useful tools & apps"
-  },
-  {
-    image: "https://via.placeholder.com/497x225.png?text=vpn",
-    original: servicesData.find(s => s.id === "hma-vpn")?.image,
-    title: "VPN",
-    desc: "Secure VPN plans"
-  },
-];
+const placeholderImage = "/images/placeholder.svg";
 
 export default function AllAccountsWithCategory() {
   const location = useLocation();
+  const navigate = useNavigate();
 
-  // derive slug from path: expect /category/<slug> or fallback
   const getActiveSlugFromPath = () => {
-    const parts = location.pathname.split("/").filter(Boolean); // remove empty parts
-    // attempt to find "category" segment and take next part as slug
+    const parts = location.pathname.split("/").filter(Boolean);
     const idx = parts.findIndex((p) => p.toLowerCase() === "category");
-    if (idx >= 0 && parts.length > idx + 1) {
-      return parts[idx + 1];
-    }
-    // fallback: if path is /service/... or root, return "all-accounts"
+    if (idx >= 0 && parts.length > idx + 1) return parts[idx + 1];
     return "all-accounts";
   };
 
-  // Optionally map specific slugs to custom display names
   const SLUG_TITLE_MAP: Record<string, string> = {
     "all-accounts": "All Accounts",
     "digital-keys": "Digital Keys",
-    "games": "Games",
-    "ott": "OTT Services",
-    "premium": "Premium",
+    games: "Games",
+    ott: "OTT Services",
+    premium: "Premium",
     "streaming-combos": "Streaming Combos",
-    "utilities": "Utilities",
-    "vpn": "VPN",
+    utilities: "Utilities",
+    vpn: "VPN",
   };
 
   const activeSlug = getActiveSlugFromPath();
@@ -117,25 +62,10 @@ export default function AllAccountsWithCategory() {
     if (!slug) return "All Accounts";
     const mapped = SLUG_TITLE_MAP[slug];
     if (mapped) return mapped;
-    // decode and prettify fallback
-    return decodeURIComponent(slug)
-      .replace(/-/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+    return decodeURIComponent(slug).replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
-  const readableTitle = slugToReadable(activeSlug);
-
-  // ---------- HERO / active index state (used to highlight a card) ----------
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % heroSlides.length);
-    }, 10000); // 10s
-    return () => clearInterval(interval);
-  }, []);
-
-  // ---------- Slider drag state ----------
+  // slider drag state
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -163,12 +93,12 @@ export default function AllAccountsWithCategory() {
     containerRef.current.scrollLeft = scrollLeft - walk;
   };
 
-  // ---------- Inline (dynamic) styles ----------
-  const containerStyle: React.CSSProperties = { padding: "60px 8% 0 8%" };
+  // styles: rewritten card style to match screenshot
+  const containerStyle: React.CSSProperties = { padding: "36px 8% 0 8%" };
   const sliderWrapperStyle: React.CSSProperties = {
     overflowX: "auto",
     display: "flex",
-    gap: "clamp(12px, 2vw, 28px)",
+    gap: "clamp(18px, 3vw, 36px)",
     scrollBehavior: "smooth",
     cursor: isDragging ? "grabbing" : "grab",
     userSelect: "none",
@@ -177,106 +107,224 @@ export default function AllAccountsWithCategory() {
     paddingBottom: 0,
   };
 
-  // UNIFORM CARD SIZE (dynamic values)
-  const CARD_WIDTH = 260; // px
-  const CARD_HEIGHT = 150; // px
+  const CARD_WIDTH = 320;
+  const CARD_HEIGHT = 160;
 
-  const cardStyle = (image: string, isActive = false): React.CSSProperties => ({
+  const cardOuterStyle = (bgImage: string): React.CSSProperties => ({
     flex: `0 0 ${CARD_WIDTH}px`,
     width: `${CARD_WIDTH}px`,
     height: `${CARD_HEIGHT}px`,
-    backgroundImage: `url(${image})`,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    borderRadius: "12px",
-    cursor: "pointer",
+    borderRadius: 14,
+    background: "#f4f7fb", // pale background
+    boxShadow: "0 8px 22px rgba(13, 26, 41, 0.06)",
     display: "flex",
-    flexDirection: "column",
-    justifyContent: "flex-end",
-    boxShadow: isActive ? "0 12px 30px rgba(0,0,0,0.18)" : "0 6px 18px rgba(0,0,0,0.10)",
-    transform: isActive ? "scale(1.04)" : "scale(1)",
-    transition: "transform 0.28s ease, box-shadow 0.28s ease",
+    alignItems: "center",
+    padding: 16,
+    gap: 12,
     position: "relative",
     overflow: "hidden",
-    backgroundColor: "#F1F5F9",
-    outline: isActive ? "2px solid rgba(30,76,161,0.12)" : "none",
   });
 
-  const buttonStyle: React.CSSProperties = {
-    position: "absolute",
-    bottom: "12px",
-    left: "12px",
-    padding: "7px 14px",
-    backgroundColor: "#ffffff",
-    color: "rgb(0, 0, 0)",
-    border: "none",
-    borderRadius: "40px",
-    cursor: "pointer",
-    fontWeight: 600,
-    fontSize: "14px",
+  const leftContentStyle: React.CSSProperties = {
     display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    transition: "background 0.25s, color 0.25s",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    flex: "1 1 auto",
+    minWidth: 0,
   };
 
-  const acctButtonStyle: React.CSSProperties = {
-    position: "absolute",
-    bottom: "12px",
-    right: "12px",
-    padding: "7px 12px",
-    backgroundColor: "#ffffff",
-    color: "rgb(0,0,0)",
-    border: "none",
-    borderRadius: "32px",
-    cursor: "pointer",
-    fontWeight: 600,
-    fontSize: "13px",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
+  const pillTitleStyle: React.CSSProperties = {
+    display: "inline-block",
+    padding: "6px 10px",
+    borderRadius: 20,
+    background: "#ffffff",
+    boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
+    fontWeight: 700,
+    fontSize: 13,
+    alignSelf: "flex-start",
   };
 
-  const arrowStyle: React.CSSProperties = { fontSize: "16px", display: "inline-block", transition: "transform 0.25s" };
-
-  const originalThumbStyle: React.CSSProperties = {
-    position: "absolute",
-    bottom: "12px",
-    right: "12px",
-    width: "56px",
-    height: "56px",
-    borderRadius: "8px",
+  const descStyle: React.CSSProperties = {
+    marginTop: 10,
+    fontSize: 13,
+    color: "#46535a",
+    background: "rgba(255,255,255,0.6)",
+    padding: "6px 10px",
+    borderRadius: 12,
+    maxWidth: "85%",
+    whiteSpace: "nowrap",
     overflow: "hidden",
-    border: "2px solid rgba(0,0,0,0.08)",
-    background: "#fff",
-    zIndex: 30,
+    textOverflow: "ellipsis",
+  };
+
+  const viewPillStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "8px 14px",
+    borderRadius: 24,
+    background: "#ffffff",
+    border: "none",
+    fontWeight: 700,
+    cursor: "pointer",
+    boxShadow: "0 4px 10px rgba(13,26,41,0.06)",
+    fontSize: 13,
+  };
+
+  const rightThumbWrapper: React.CSSProperties = {
+    width: 76,
+    height: 76,
+    borderRadius: 12,
+    background: "#ffffff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    boxShadow: "0 6px 12px rgba(13,26,41,0.06)",
+    overflow: "hidden",
+    flexShrink: 0,
   };
 
-  const fallbackImage = "/images/placeholder.svg";
-
-  const onCardView = (card: Card) => {
-    console.log("Card view:", card.title);
+  const thumbImgStyle: React.CSSProperties = {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    display: "block",
   };
 
+  // small arrow style (used in pills)
+  const arrowStyle: React.CSSProperties = { fontSize: 14, display: "inline-block", transition: "transform 0.2s" };
+
+  // navigation handler for services
   const onServiceView = (svc: Service) => {
-    console.log("Service view:", svc.id);
+    try {
+      console.log("Service view:", svc.id);
+    } catch (e) {
+      // ignore
+    }
+    if (svc && svc.id) {
+      navigate(`/service/${encodeURIComponent(svc.id)}`);
+    }
   };
 
-  // ---------- All Accounts + pagination ----------
-  const allData = servicesData;
+  // static cards example (can add original thumbnail image via `original`)
+  const cards: Card[] = [
+    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/netflix.jpg.webp", original: "https://shopallpremium.com/wp-content/uploads/2022/02/netflix.jpg.webp", title: "Digital Keys", desc: "License keys & top-ups" },
+    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/primevideo.png.webp", original: "https://shopallpremium.com/wp-content/uploads/2022/02/primevideo.png.webp", title: "Games", desc: "Top game codes & bundles" },
+    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/45cc6c91692a3665d97b570a3272132a.jpg", original: "https://shopallpremium.com/wp-content/uploads/2022/02/45cc6c91692a3665d97b570a3272132a.jpg", title: "OTT", desc: "Streaming services" },
+    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/YouTube-Premium-512x512-1.png.webp", original: "https://shopallpremium.com/wp-content/uploads/2022/02/YouTube-Premium-512x512-1.png.webp", title: "Premium", desc: "Premium plans & upgrades" },
+    { image: "https://via.placeholder.com/497x225.png?text=streaming-combos", original: "https://shopallpremium.com/wp-content/uploads/2022/02/altbalaji.png.webp", title: "Streaming Combos", desc: "Combo subscriptions" },
+    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/altbalaji.png.webp", title: "Utilities", desc: "Useful tools & apps" },
+    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-33.png", title: "VPN", desc: "Secure VPN plans" },
+     { image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-33.png", title: "AI", desc: "AI" },
+  ];
+
+  // data fetching (unchanged)
+  const urlBase = import.meta.env.VITE_API_HOST ?? "";
+  const [allData, setAllData] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // only category filter + pagination
+  const [categoryFilter, setCategoryFilter] = useState<string>(
+    activeSlug === "all-accounts" ? "" : activeSlug.replace(/-/g, " ")
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
-  const totalPages = Math.max(1, Math.ceil(allData.length / ITEMS_PER_PAGE));
-  const paginated = allData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const resp = await axios.get(`${urlBase}/Ottservice`);
+        const items = Array.isArray(resp.data) ? resp.data : resp.data?.data ?? [];
+        const mapped: Service[] = items.map((it: any, idx: number) => {
+          const id = it.id ?? it._id ?? it.slug ?? `svc-${idx}`;
+          const title = it.ottServiceName ?? it.title ?? it.name ?? `Service ${idx + 1}`;
+          const priceRaw = Number(it.price ?? it.originalPrice ?? 0) || 0;
+          const discountedRaw = it.discountedPrice !== undefined ? Number(it.discountedPrice) : undefined;
+          const images: string[] = Array.isArray(it.images) ? it.images.filter(Boolean) : it.image ? [it.image] : [];
+          const primaryImage =
+            (Array.isArray(it.images) && it.images[0]) ||
+            it.image ||
+            (it.images && typeof it.images === "string" ? it.images : undefined) ||
+            placeholderImage;
+          const status: Service["status"] =
+            it.status === "out-of-stock" ? "out-of-stock" : it.status === "trending" ? "trending" : "available";
+
+          return {
+            id: String(id),
+            title: String(title),
+            originalPrice: priceRaw,
+            discountPrice: discountedRaw,
+            image: primaryImage || placeholderImage,
+            status,
+            description: it.description,
+            planDurations: it.planDurations,
+            images,
+            accessLicenseTypes: it.accessLicenseTypes,
+            videoQuality: it.videoQuality,
+            category: Array.isArray(it.category) ? it.category.join(", ") : it.category ?? it.tags ?? undefined,
+            createdAt: it.createdAt ?? it.created_at ?? it.date ?? undefined,
+          } as Service;
+        });
+
+        if (!cancelled) setAllData(mapped);
+      } catch (err: any) {
+        console.error("Failed to fetch ott services:", err);
+        setError(err?.message ?? "Failed to fetch data");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, [urlBase]);
+
+  // derive categories for chips
+  const availableCategories = useMemo(() => {
+    const set = new Set<string>();
+    allData.forEach((s) => {
+      if (s.category) {
+        s.category
+          .toString()
+          .split(",")
+          .map((c) => c.trim())
+          .filter(Boolean)
+          .forEach((c) => set.add(c.toLowerCase()));
+      }
+    });
+    cards.forEach((c) => {
+      if (c.title) set.add(c.title.toLowerCase());
+    });
+    return Array.from(set).sort();
+  }, [allData]);
+
+  // filtering (only by category)
+  const filteredData = allData.filter((s) => {
+    if (!categoryFilter) return true;
+    const normalizedCategory = (s.category ?? "").toString().toLowerCase();
+    const slugNormalized = categoryFilter.toLowerCase();
+    if (normalizedCategory.includes(slugNormalized) || s.title.toLowerCase().includes(slugNormalized)) return true;
+    return false;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
+  const paginated = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter, allData]);
 
   const goToPage = (p: number) => {
     if (p < 1 || p > totalPages) return;
     setCurrentPage(p);
-    const el = document.querySelector('.all-accounts');
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const el = document.querySelector(".all-accounts");
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const slugify = (text?: string) => {
@@ -292,13 +340,32 @@ export default function AllAccountsWithCategory() {
     );
   };
 
+  const applyCategoryFilterFromCard = (title?: string) => {
+    if (!title) return;
+    setCategoryFilter(title.toLowerCase());
+    const el = document.querySelector(".all-accounts");
+    setTimeout(() => el?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+  };
+
+  const clearCategoryFilter = () => setCategoryFilter("");
+
+  const fallbackImage = placeholderImage;
+  const readableTitle = categoryFilter ? categoryFilter.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : slugToReadable(activeSlug);
+
+  // handler used by card button
+  const onCardView = (card: Card) => {
+    if (!card?.title) return;
+    applyCategoryFilterFromCard(card.title);
+  };
+
   return (
     <div className="page-wrap">
+      <div style={{ padding: "12px 8%" }}>
+        {loading && <div style={{ color: "#0b57d0" }}>Loading services…</div>}
+        {error && <div style={{ color: "#d00" }}>Error: {error}</div>}
+      </div>
 
-      {/* ---------- Hero image showing current active slide ---------- */}
-      <div className="hero-large" style={{ height: 220, backgroundImage: `url(${heroSlides[activeIndex]})`, backgroundSize: 'cover', backgroundPosition: 'center' }} aria-hidden />
-
-      {/* ---------- Category slider (full-width) ---------- */}
+      {/* category slider (new visual) */}
       <div style={containerStyle}>
         <div
           ref={containerRef}
@@ -313,7 +380,6 @@ export default function AllAccountsWithCategory() {
         >
           {cards.map((card, index) => {
             const to = `/category/${slugify(card.title)}`;
-            const isActive = index === activeIndex; // use the activeIndex variable
             return (
               <Link
                 key={index}
@@ -323,75 +389,112 @@ export default function AllAccountsWithCategory() {
                 role="listitem"
                 aria-label={card.title ?? `Card ${index + 1}`}
                 onClick={(e) => {
+                  // don't navigate when dragging
                   if (dragged || isDragging) {
                     e.preventDefault();
                     return;
                   }
+                  // prefer filter behavior (avoid direct navigation)
+                  e.preventDefault();
                   onCardView(card);
                 }}
               >
-                <div className="campus-card" style={cardStyle(card.image, isActive)}>
-                  {card.title && <div className="card-title">{card.title}</div>}
-                  {card.desc && <div className="card-desc">{card.desc}</div>}
-                  {card.original && (
-                    <div style={originalThumbStyle} aria-hidden>
-                      <img
-                        src={card.original}
-                        alt={`${card.title ?? "item"} original"`}
-                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = fallbackImage;
-                        }}
-                      />
+                <div style={cardOuterStyle(card.image)} aria-hidden={false}>
+                  {/* left area: title, desc, view button */}
+                  <div style={leftContentStyle}>
+                    <div>
+                      {card.title && <div style={pillTitleStyle}>{card.title}</div>}
+                      {card.desc && <div style={descStyle}>{card.desc}</div>}
                     </div>
-                  )}
 
-                  <button
-                    style={buttonStyle}
-                    onClick={(e) => {
-                      if (dragged || isDragging) {
-                        e.preventDefault();
-                        return;
-                      }
-                      e.preventDefault();
-                      onCardView(card);
-                    }}
-                    aria-label={`View ${card.title ?? "item"}`}
-                  >
-                    View <span style={arrowStyle}>→</span>
-                  </button>
+                    <div>
+                      <button
+                        style={viewPillStyle}
+                        onClick={(e) => {
+                          if (dragged || isDragging) {
+                            e.preventDefault();
+                            return;
+                          }
+                          e.preventDefault();
+                          onCardView(card);
+                        }}
+                        aria-label={`View ${card.title ?? "item"}`}
+                      >
+                        View <span style={arrowStyle}>→</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* right area: logo/thumb */}
+                  <div style={rightThumbWrapper} aria-hidden>
+                    <img
+                      src={card.original ?? card.image ?? fallbackImage}
+                      alt={card.title ?? "thumb"}
+                      style={thumbImgStyle}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = fallbackImage;
+                      }}
+                    />
+                  </div>
                 </div>
               </Link>
             );
           })}
         </div>
+      </div>
 
-        {/* small indicators for hero slides */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 12 }} aria-hidden>
-          {heroSlides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setActiveIndex(i)}
-              aria-label={`Show slide ${i + 1}`}
-              style={{
-                width: i === activeIndex ? 18 : 10,
-                height: 10,
-                borderRadius: 10,
-                background: i === activeIndex ? '#1E4CA1' : 'rgba(0,0,0,0.14)',
-                border: 'none',
-                transition: 'all 180ms ease',
-                cursor: 'pointer'
-              }}
-            />
-          ))}
+      {/* category chips */}
+      <div style={{ padding: "18px 8%", paddingBottom: "32px", marginBottom: "16px", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <strong style={{ marginRight: 8 }}>Categories:</strong>
+
+          <button
+            onClick={() => clearCategoryFilter()}
+            style={{
+              padding: "6px 10px",
+              borderRadius: 20,
+              border: "1px solid #ddd",
+              background: categoryFilter ? "#fff" : "#1E4CA1",
+              color: categoryFilter ? "#111" : "#fff",
+              cursor: "pointer",
+            }}
+            aria-pressed={!categoryFilter}
+            title="Show all"
+          >
+            All
+          </button>
+
+          {availableCategories.map((c) => {
+            const isActive = c.toLowerCase() === categoryFilter.toLowerCase();
+            return (
+              <button
+                key={c}
+                onClick={() => {
+                  setCategoryFilter(c);
+                  const el = document.querySelector(".all-accounts");
+                  setTimeout(() => el?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+                }}
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: 20,
+                  border: "1px solid #ddd",
+                  background: isActive ? "#1E4CA1" : "#fff",
+                  color: isActive ? "#fff" : "#111",
+                  cursor: "pointer",
+                  textTransform: "capitalize",
+                }}
+                aria-pressed={isActive}
+              >
+                {c}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* ---------- All Accounts section (dynamic heading) ---------- */}
       <section className="all-accounts" aria-label="All Accounts">
-        <div className="all-accounts__header">
-          <div className="all-accounts__title">{readableTitle}</div>
-          <div style={{ fontSize: 14, color: '#111' }}>{allData.length} results</div>
+        <div className="all-accounts__header" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ fontSize: 14, color: "#111" }}>{filteredData.length} results</div>
         </div>
 
         <div className="all-accounts__grid">
@@ -406,21 +509,43 @@ export default function AllAccountsWithCategory() {
                   e.preventDefault();
                   return;
                 }
-                onServiceView(s);
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
               }}
             >
               <div className="account-card" role="article">
-                <div
-                  className="account-card__img"
-                  style={{ backgroundImage: `url(${s.image})` }}
-                />
+                <div className="account-card__img" style={{ backgroundImage: `url(${s.image ?? fallbackImage})` }} />
 
                 <div className="account-card__meta">
                   <h4>{s.title}</h4>
-                  <p>{formatPrice(s.discountPrice ?? s.originalPrice)}</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {s.originalPrice ? (
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700 }}>{formatPrice(s.originalPrice)}</div>
+                        <div style={{ fontSize: 12, color: "#666", textDecoration: "line-through" }}>{formatPrice(s.originalPrice)}</div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{formatPrice(s.originalPrice)}</div>
+                    )}
+                  </div>
 
                   <button
-                    style={acctButtonStyle}
+                    style={{
+                      position: "absolute",
+                      bottom: 12,
+                      right: 12,
+                      padding: "7px 12px",
+                      backgroundColor: "#ffffff",
+                      color: "rgb(0,0,0)",
+                      border: "none",
+                      borderRadius: 32,
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
+                    }}
                     onClick={(e) => {
                       if (dragged || isDragging) {
                         e.preventDefault();
@@ -437,24 +562,24 @@ export default function AllAccountsWithCategory() {
               </div>
             </Link>
           ))}
+
+          {filteredData.length === 0 && !loading && <div style={{ padding: 24, color: "#666" }}>No services found.</div>}
         </div>
 
         <div className="all-accounts__pagination" role="navigation" aria-label="All accounts pagination">
-          <button className="page-btn" onClick={() => goToPage(currentPage - 1)} aria-disabled={currentPage === 1} aria-label="Previous page">Prev</button>
+          <button className="page-btn" onClick={() => goToPage(currentPage - 1)} aria-disabled={currentPage === 1} aria-label="Previous page">
+            Prev
+          </button>
 
           {Array.from({ length: totalPages }).map((_, i) => (
-            <button
-              key={i}
-              className="page-btn"
-              onClick={() => goToPage(i + 1)}
-              aria-current={currentPage === i + 1}
-              aria-label={`Go to page ${i + 1}`}
-            >
+            <button key={i} className="page-btn" onClick={() => goToPage(i + 1)} aria-current={currentPage === i + 1} aria-label={`Go to page ${i + 1}`}>
               {i + 1}
             </button>
           ))}
 
-          <button className="page-btn" onClick={() => goToPage(currentPage + 1)} aria-disabled={currentPage === totalPages} aria-label="Next page">Next</button>
+          <button className="page-btn" onClick={() => goToPage(currentPage + 1)} aria-disabled={currentPage === totalPages} aria-label="Next page">
+            Next
+          </button>
         </div>
       </section>
     </div>
