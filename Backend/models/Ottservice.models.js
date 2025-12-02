@@ -1,22 +1,55 @@
-import mongoose from 'mongoose';
+// models/OttServicemodel.js
+import mongoose from "mongoose";
+const { Schema } = mongoose;
 
-// Define the schema
-const OttServicemodelSchema = new mongoose.Schema({
-  ottServiceName: { type: String, required: true },
-  description: { type: String, required: true },
-  planDurations: { type: [String], default: [] },        // e.g. ["1 month", "3 months"]
-  images: { type: [String], default: [] },               // array of image URLs
-  accessLicenseTypes: { type: [String], default: [] },   // e.g. ["single-device", "multi-device"]
-  videoQuality: { type: String, default: null },         // e.g. "1080p", "4K"
-  price: { type: Number, required: true },
-  discountedPrice: { type: Number, default: null },
-  category: { type: String, required: true },
-  createdAt: { type: String },                           //
-});
+// Subdocument for mainHeadings
+const MainHeadingSchema = new Schema(
+  {
+    planDurations: { type: String, required: true },
+    Price: { type: [String], default: [] }, // array of strings
+  },
+  { _id: false } // no separate _id for each subdocument
+);
 
+const OttServicemodelSchema = new Schema(
+  {
+    ottServiceName: { type: String, required: true },
+    description: { type: String, required: true },
 
-// Create the model
-const OttServicemodel = mongoose.model('OttServicemodel', OttServicemodelSchema);
+    images: {
+      type: [String],
+      default: [],
+    },
 
-// Export the model
+    accessLicenseTypes: {
+      type: [String],
+      default: [],
+    },
+
+    videoQuality: { type: String, default: null },
+
+    // your mainHeadings array
+    mainHeadings: {
+      type: [MainHeadingSchema],
+      default: [],
+    },
+
+    price: { type: String, required: true },
+    discountedPrice: { type: String, default: null },
+    category: { type: String, required: true },
+    stock: { type: String, default: "0" },
+
+    // you used `date` in the schema (not `createdAt`)
+    date: { type: String },
+  },
+  {
+    timestamps: true, // adds createdAt, updatedAt automatically
+  }
+);
+
+const OttServicemodel = mongoose.model(
+  "OttServicemodel",
+  OttServicemodelSchema
+);
+
 export default OttServicemodel;

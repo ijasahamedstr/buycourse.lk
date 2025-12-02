@@ -60,6 +60,44 @@ MetaChip.propTypes = {
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 };
 
+/**
+ * Safely convert durations into a human-readable label.
+ * Supports:
+ *  - planDurations: ["1 month", "3 months"]
+ *  - planDurations: [{ duration, price, stockStatus }]
+ *  - mainHeadings: [{ planDurations, Price: [...] }]
+ */
+const getPlanDurationsLabel = (item) => {
+  const pd = item?.planDurations;
+  const mh = item?.mainHeadings;
+
+  // 1) Prefer planDurations if present
+  if (Array.isArray(pd) && pd.length > 0) {
+    // if strings
+    if (typeof pd[0] === "string") {
+      return pd.join(", ");
+    }
+
+    // if objects
+    const durations = pd
+      .map((p) => (p && p.duration ? String(p.duration).trim() : ""))
+      .filter(Boolean);
+
+    if (durations.length) return durations.join(", ");
+  }
+
+  // 2) Fallback: mainHeadings
+  if (Array.isArray(mh) && mh.length > 0) {
+    const durations = mh
+      .map((h) => (h && h.planDurations ? String(h.planDurations).trim() : ""))
+      .filter(Boolean);
+
+    if (durations.length) return durations.join(", ");
+  }
+
+  return "—";
+};
+
 function ServiceCard({ item, onDelete, deletingId }) {
   const isDeleting = deletingId === item._id;
 
@@ -67,11 +105,8 @@ function ServiceCard({ item, onDelete, deletingId }) {
   const cover =
     (item.images && item.images.length && item.images[0]) || item.image || DEFAULT_IMAGE;
 
-  // readable plan durations
-  const plans =
-    Array.isArray(item.planDurations) && item.planDurations.length
-      ? item.planDurations.join(", ")
-      : "—";
+  // readable plan durations (uses planDurations or mainHeadings)
+  const plans = getPlanDurationsLabel(item);
 
   const priceLabel =
     item.price != null
@@ -230,16 +265,45 @@ export default function OttServiceGridView() {
     };
   }, [OTT_ENDPOINT]);
 
+  // Get plain text of durations for search, from planDurations or mainHeadings
+  const getPlanDurationsText = (it) => {
+    const pd = it?.planDurations;
+    const mh = it?.mainHeadings;
+
+    // from planDurations
+    if (Array.isArray(pd) && pd.length > 0) {
+      if (typeof pd[0] === "string") return pd.join(" ");
+      return pd
+        .map((p) => (p && p.duration ? String(p.duration).trim() : ""))
+        .filter(Boolean)
+        .join(" ");
+    }
+
+    // from mainHeadings
+    if (Array.isArray(mh) && mh.length > 0) {
+      return mh
+        .map((h) => (h && h.planDurations ? String(h.planDurations).trim() : ""))
+        .filter(Boolean)
+        .join(" ");
+    }
+
+    return "";
+  };
+
   // Filtered list based on category and search
   const normalized = (s = "") => String(s).toLowerCase();
   const filteredItems = items.filter((it) => {
     const category = it.category || "";
     const matchesCategory =
       selectedCategory === "All" || normalized(category) === normalized(selectedCategory);
-    const text = `${it.ottServiceName || ""} ${it.description || ""} ${category} ${(
-      it.planDurations || []
-    ).join(" ")}`;
+
+    const planDurationsText = getPlanDurationsText(it);
+
+    const text = `${it.ottServiceName || ""} ${
+      it.description || ""
+    } ${category} ${planDurationsText}`;
     const matchesSearch = normalized(text).includes(normalized(searchTerm));
+
     return matchesCategory && matchesSearch;
   });
 
@@ -247,7 +311,7 @@ export default function OttServiceGridView() {
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(filteredItems.length / rowsPerPage));
     if (page > totalPages) setPage(totalPages);
-  }, [filteredItems.length, rowsPerPage]);
+  }, [filteredItems.length, rowsPerPage, page]);
 
   const handleDelete = async (id) => {
     if (!id) {

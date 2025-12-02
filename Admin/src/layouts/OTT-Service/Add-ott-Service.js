@@ -31,7 +31,8 @@ export default function AddOTTService() {
     ottServiceName: "",
     description: "",
     category: "",
-    planDurations: [], // array of strings (optional)
+    // array of objects { duration, price, stockStatus }
+    planDurations: [],
     images: [], // array of image URLs
     accessLicenseTypes: [], // optional array of strings
     videoQuality: "", // e.g. 'HD', 'SD', '4K'
@@ -39,7 +40,14 @@ export default function AddOTTService() {
     discountedPrice: "", // optional
   });
 
-  const [tempInput, setTempInput] = useState({ planDuration: "", imageUrl: "", licenseType: "" });
+  const [tempInput, setTempInput] = useState({
+    planDuration: "",
+    planPrice: "",
+    planStock: "InStock",
+    imageUrl: "",
+    licenseType: "",
+  });
+
   const [errors, setErrors] = useState({});
 
   const CATEGORIES = [
@@ -51,6 +59,11 @@ export default function AddOTTService() {
     "Streaming Combos",
     "Utilities",
     "VPN",
+  ];
+
+  const STOCK_OPTIONS = [
+    { value: "InStock", label: "In Stock" },
+    { value: "OutOfStock", label: "Out of Stock" },
   ];
 
   const isImageUrl = (url) => {
@@ -69,18 +82,55 @@ export default function AddOTTService() {
     setErrors((p) => ({ ...p, [name]: "" }));
   };
 
-  // Plan durations handlers
+  // Plan durations handlers (duration + sub price + stock status)
   const addPlanDuration = () => {
-    const trimmed = tempInput.planDuration.trim();
-    if (!trimmed) return setErrors((p) => ({ ...p, planDuration: "Cannot be empty." }));
-    if (service.planDurations.includes(trimmed))
-      return setErrors((p) => ({ ...p, planDuration: "Already added." }));
-    setService((p) => ({ ...p, planDurations: [...p.planDurations, trimmed] }));
-    setTempInput((p) => ({ ...p, planDuration: "" }));
-    setErrors((p) => ({ ...p, planDuration: "" }));
+    const duration = tempInput.planDuration.trim();
+    const priceStr = tempInput.planPrice.trim();
+    const stockStatus = tempInput.planStock || "InStock";
+
+    let e = {};
+    if (!duration) e.planDuration = "Duration cannot be empty.";
+    if (!priceStr) e.planPrice = "Sub price is required.";
+    else if (Number.isNaN(Number(priceStr))) e.planPrice = "Sub price must be a number.";
+
+    if (Object.keys(e).length) {
+      setErrors((prev) => ({ ...prev, ...e }));
+      return;
+    }
+
+    const existing = service.planDurations.find(
+      (pd) =>
+        pd.duration === duration && pd.price === Number(priceStr) && pd.stockStatus === stockStatus
+    );
+    if (existing) {
+      setErrors((p) => ({ ...p, planDuration: "This plan is already added." }));
+      return;
+    }
+
+    setService((p) => ({
+      ...p,
+      planDurations: [...p.planDurations, { duration, price: Number(priceStr), stockStatus }],
+    }));
+
+    setTempInput((p) => ({
+      ...p,
+      planDuration: "",
+      planPrice: "",
+      planStock: "InStock",
+    }));
+
+    setErrors((p) => ({
+      ...p,
+      planDuration: "",
+      planPrice: "",
+    }));
   };
+
   const removePlanDuration = (i) =>
-    setService((p) => ({ ...p, planDurations: p.planDurations.filter((_, idx) => idx !== i) }));
+    setService((p) => ({
+      ...p,
+      planDurations: p.planDurations.filter((_, idx) => idx !== i),
+    }));
 
   // Images handlers
   const addImage = () => {
@@ -93,6 +143,7 @@ export default function AddOTTService() {
     setTempInput((p) => ({ ...p, imageUrl: "" }));
     setErrors((p) => ({ ...p, imageUrl: "" }));
   };
+
   const removeImage = (i) =>
     setService((p) => ({ ...p, images: p.images.filter((_, idx) => idx !== i) }));
 
@@ -106,6 +157,7 @@ export default function AddOTTService() {
     setTempInput((p) => ({ ...p, licenseType: "" }));
     setErrors((p) => ({ ...p, licenseType: "" }));
   };
+
   const removeLicenseType = (i) =>
     setService((p) => ({
       ...p,
@@ -115,6 +167,7 @@ export default function AddOTTService() {
   const validate = () => {
     const e = {};
     if (!service.ottServiceName.trim()) e.ottServiceName = "Service name is required.";
+    if (!service.description.trim()) e.description = "Description is required.";
     if (!service.category) e.category = "Please select a category.";
     if (service.price === "" || service.price === null) e.price = "Price is required.";
     else if (Number.isNaN(Number(service.price))) e.price = "Price must be a number.";
@@ -135,16 +188,36 @@ export default function AddOTTService() {
     });
 
     try {
+      // ✅ compute overall stock for root-level `stock` field
+      const overallStock = service.planDurations.some((pd) => pd.stockStatus === "InStock")
+        ? "InStock"
+        : "OutOfStock";
+
+      // ✅ build mainHeadings in the shape of your schema { planDurations, Price: [string] }
+      const mainHeadings = service.planDurations.map((pd) => ({
+        planDurations: pd.duration,
+        Price: [String(pd.price)],
+      }));
+
       const payload = {
         ottServiceName: service.ottServiceName,
         description: service.description,
         category: service.category,
-        planDurations: service.planDurations,
-        images: service.images,
-        accessLicenseTypes: service.accessLicenseTypes,
+
+        // still send full detail
+        planDurations: service.planDurations, // { duration, price, stockStatus }
+
+        // for your current schema
+        mainHeadings,
+
+        images: service.images, // array of strings
+        accessLicenseTypes: service.accessLicenseTypes, // array of strings
         videoQuality: service.videoQuality,
-        price: Number(service.price),
-        discountedPrice: service.discountedPrice ? Number(service.discountedPrice) : undefined,
+
+        price: String(service.price),
+        discountedPrice: service.discountedPrice ? String(service.discountedPrice) : undefined,
+
+        stock: overallStock,
       };
 
       const res = await axios.post(`${apiBase}/Ottservice`, payload);
@@ -173,7 +246,13 @@ export default function AddOTTService() {
           price: "",
           discountedPrice: "",
         });
-        setTempInput({ planDuration: "", imageUrl: "", licenseType: "" });
+        setTempInput({
+          planDuration: "",
+          planPrice: "",
+          planStock: "InStock",
+          imageUrl: "",
+          licenseType: "",
+        });
         setErrors({});
       }
     } catch (err) {
@@ -238,6 +317,8 @@ export default function AddOTTService() {
                     multiline
                     minRows={3}
                     sx={{ mb: 2 }}
+                    error={Boolean(errors.description)}
+                    helperText={errors.description}
                   />
 
                   <FormControl fullWidth sx={{ mb: 2, height: 55 }}>
@@ -263,19 +344,26 @@ export default function AddOTTService() {
                     )}
                   </FormControl>
 
-                  {/* plan durations */}
-                  <MDTypography variant="subtitle2">Plan Durations (optional)</MDTypography>
-                  <Box sx={{ display: "flex", gap: 1, mb: 1, mt: 1 }}>
+                  {/* Plan Durations Section */}
+                  <MDTypography variant="h6" sx={{ fontWeight: "bold", mt: 3 }}>
+                    Plan Durations
+                  </MDTypography>
+
+                  <MDTypography variant="subtitle2" sx={{ mb: 1, color: "gray" }}>
+                    Add Duration & Price
+                  </MDTypography>
+
+                  <Box sx={{ display: "flex", gap: 1, mb: 1, mt: 1, flexWrap: "wrap" }}>
                     <TextField
                       size="small"
-                      label="e.g. 1 month, 1 year"
+                      label="Duration (e.g. 1 month)"
                       value={tempInput.planDuration}
                       onChange={(e) =>
                         setTempInput((p) => ({ ...p, planDuration: e.target.value }))
                       }
                       helperText={errors.planDuration}
                       error={Boolean(errors.planDuration)}
-                      sx={{ flex: 1 }}
+                      sx={{ flex: 1, minWidth: 160 }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
@@ -283,30 +371,73 @@ export default function AddOTTService() {
                         }
                       }}
                     />
+                    <TextField
+                      size="small"
+                      label="Sub Price"
+                      value={tempInput.planPrice}
+                      onChange={(e) => setTempInput((p) => ({ ...p, planPrice: e.target.value }))}
+                      helperText={errors.planPrice}
+                      error={Boolean(errors.planPrice)}
+                      sx={{ width: 140 }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addPlanDuration();
+                        }
+                      }}
+                    />
+                    <FormControl size="small" sx={{ width: 150 }}>
+                      <InputLabel id="plan-stock-label">Stock</InputLabel>
+                      <Select
+                        labelId="plan-stock-label"
+                        label="Stock"
+                        value={tempInput.planStock}
+                        onChange={(e) => setTempInput((p) => ({ ...p, planStock: e.target.value }))}
+                      >
+                        {STOCK_OPTIONS.map((opt) => (
+                          <MenuItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
                     <Button
                       variant="outlined"
                       startIcon={<AddIcon />}
                       onClick={addPlanDuration}
-                      style={{ color: "black" }}
+                      style={{ color: "black", height: 40 }}
                     >
                       Add
                     </Button>
                   </Box>
+
                   <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
                     {service.planDurations.map((pd, i) => (
                       <Box
-                        key={pd + i}
+                        key={pd.duration + i}
                         sx={{
                           px: 1,
-                          py: 0.4,
+                          py: 0.7,
                           borderRadius: 1,
                           border: "1px solid rgba(0,0,0,0.06)",
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: 0.5,
+                          gap: 0.8,
                         }}
                       >
-                        <MDTypography variant="caption">{pd}</MDTypography>
+                        <MDTypography variant="caption" sx={{ fontWeight: 500 }}>
+                          {pd.duration}
+                        </MDTypography>
+                        <MDTypography variant="caption">| Price: {pd.price}</MDTypography>
+                        <MDTypography
+                          variant="caption"
+                          sx={{
+                            color: pd.stockStatus === "InStock" ? "green" : "red",
+                          }}
+                        >
+                          | {pd.stockStatus === "InStock" ? "In Stock" : "Out of Stock"}
+                        </MDTypography>
                         <IconButton size="small" onClick={() => removePlanDuration(i)}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>

@@ -1,56 +1,94 @@
 import moment from "moment";
 import OttServicemodel from "../models/Ottservice.models.js";
 
-// Create OTT service
+// controllers/ottServiceController.js
 export const OttServiceCreate = async (req, res) => {
-  const {
-    ottServiceName,
-    description,
-    planDurations,       
-    images,            
-    accessLicenseTypes,    
-    videoQuality,         
-    price,
-    discountedPrice,      
-    category                
-  } = req.body;
-
-  // Minimal required validation
-  if (!ottServiceName || !description || price == null || !category) {
-    return res.status(400).json({
-      status: 400,
-      message: "Please provide ottServiceName, description, price, and category.",
-    });
-  }
-
   try {
-    const date = moment().format("YYYY-MM-DD");
-
-    const newService = new OttServicemodel({
+    let {
       ottServiceName,
       description,
-      planDurations: Array.isArray(planDurations) ? planDurations : (planDurations ? [planDurations] : []),
-      images: Array.isArray(images) ? images : (images ? [images] : []),
-      accessLicenseTypes: Array.isArray(accessLicenseTypes) ? accessLicenseTypes : (accessLicenseTypes ? [accessLicenseTypes] : []),
-      videoQuality: videoQuality || null,
+      images,
+      accessLicenseTypes,
+      videoQuality,      // optional
+      mainHeadings,      // array of { planDurations, Price }
       price,
-      discountedPrice: discountedPrice != null ? discountedPrice : null,
-      category,                     // SAVE CATEGORY HERE
-      createdAt: date,
+      discountedPrice,   // optional
+      category,
+      stock,
+    } = req.body;
+
+    // Basic validation: required fields only
+    if (!ottServiceName || !description || price == null || !category) {
+      return res.status(400).json({
+        status: 400,
+        message:
+          "Please provide ottServiceName, description, price, and category.",
+      });
+    }
+
+    // ✅ Ensure images is always an array
+    if (Array.isArray(images)) {
+      // as is
+    } else if (typeof images === "string" && images.trim() !== "") {
+      // single value from form-data / urlencoded
+      images = [images];
+    } else {
+      images = [];
+    }
+
+    // ✅ Ensure accessLicenseTypes is always an array
+    if (Array.isArray(accessLicenseTypes)) {
+      // as is
+    } else if (
+      typeof accessLicenseTypes === "string" &&
+      accessLicenseTypes.trim() !== ""
+    ) {
+      // e.g. "single-device,multi-device"
+      if (accessLicenseTypes.includes(",")) {
+        accessLicenseTypes = accessLicenseTypes
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean);
+      } else {
+        accessLicenseTypes = [accessLicenseTypes.trim()];
+      }
+    } else {
+      accessLicenseTypes = [];
+    }
+
+    // ✅ Normalize mainHeadings (optional, only if you send it)
+    if (!Array.isArray(mainHeadings)) {
+      mainHeadings = [];
+    }
+
+    const date = moment().format("YYYY-MM-DD"); // matches your `date` field
+
+    const newOTT = new OttServicemodel({
+      ottServiceName,
+      description,
+      images,
+      accessLicenseTypes,
+      videoQuality: videoQuality || null,
+      mainHeadings, // if you send it from frontend
+      price,
+      discountedPrice: discountedPrice || null,
+      category,
+      stock: stock ?? "0",
+      date,
     });
 
-    const saved = await newService.save();
+    const savedOTT = await newOTT.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       status: 201,
-      message: "OTT service created successfully.",
-      data: saved,
+      message: "OTT created successfully.",
+      data: savedOTT,
     });
   } catch (error) {
-    console.error("Error creating OTT service:", error);
-    res.status(500).json({
+    console.error("Error creating OTT:", error);
+    return res.status(500).json({
       status: 500,
-      message: "Internal server error. Could not create the OTT service.",
+      message: "Internal server error. Could not create the OTT.",
       error: error.message,
     });
   }

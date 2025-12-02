@@ -1,3 +1,4 @@
+// src/Page/header.tsx
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -43,6 +44,71 @@ import SearchIcon from "@mui/icons-material/Search";
 import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
 import HomeIcon from "@mui/icons-material/Home";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+
+// -------------------- INLINE CART UTIL (self-contained) --------------------
+const CART_KEY = "cartCourses";
+
+export type StoredCourse = {
+  id: string;
+  courseName: string;
+  coursePrice?: any;
+  courseImage?: string;
+  courseDuration?: string;
+  courseCategory?: string;
+  addedAt?: number;
+};
+
+const safeParse = (v: string | null) => {
+  try {
+    return v ? JSON.parse(v) : [];
+  } catch {
+    return [];
+  }
+};
+
+function readCart(): StoredCourse[] {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    const parsed = safeParse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCart(items: StoredCourse[]) {
+  try {
+    localStorage.setItem(CART_KEY, JSON.stringify(items));
+    // dispatch same-tab event
+    const ev = new CustomEvent("cartUpdated", { detail: { items } });
+    window.dispatchEvent(ev);
+  } catch {
+    // ignore localStorage errors
+  }
+}
+
+function clearCart() {
+  writeCart([]);
+}
+
+function addItem(item: StoredCourse) {
+  const cart = readCart();
+  const exists = cart.some((c) => c.id === item.id);
+  if (!exists) {
+    cart.push(item);
+    writeCart(cart);
+  } else {
+    // still write to trigger event/listeners
+    writeCart(cart);
+  }
+}
+
+function removeItemById(id: string) {
+  const cart = readCart();
+  const filtered = cart.filter((c) => c.id !== id);
+  writeCart(filtered);
+}
+// -------------------- end cart util --------------------
 
 // Use exact fontFamily string requested
 const Montserrat = "'Montserrat', sans-serif";
@@ -92,6 +158,7 @@ export default function EtsyStyleHeader() {
   const [cartOpen, setCartOpen] = useState(false);
   const [bottomNavValue, setBottomNavValue] = useState<string>("home");
 
+  // Header cart shape: keep qty property for potential qty support
   const [cartItems, setCartItems] = useState<Array<{ id: string; title: string; qty: number }>>([]);
 
   const categories: { label: string; path: string }[] = [
@@ -102,7 +169,8 @@ export default function EtsyStyleHeader() {
     { label: "Request Service", path: "/request-service" },
   ];
 
-  const logoUrl = "https://i.ibb.co/JRPnDfqQ/cmh6a26eo000h04jmaveg5yzp-removebg-preview.png";
+  const logoUrl =
+    "https://i.ibb.co/JRPnDfqQ/cmh6a26eo000h04jmaveg5yzp-removebg-preview.png";
 
   const isDarkMode = theme.palette.mode === "dark";
   const bgColor = isDarkMode ? "#0f172a" : "#ffffff";
@@ -123,7 +191,12 @@ export default function EtsyStyleHeader() {
   const [reqMobile, setReqMobile] = useState("");
   const [reqType, setReqType] = useState("");
   const [reqDesc, setReqDesc] = useState("");
-  const [reqErrors, setReqErrors] = useState<{ name?: string; mobile?: string; type?: string; desc?: string }>({});
+  const [reqErrors, setReqErrors] = useState<{
+    name?: string;
+    mobile?: string;
+    type?: string;
+    desc?: string;
+  }>({});
 
   // Inquiry (right dialog) form — ORDER fields removed
   const [inquiryDialogOpen, setInquiryDialogOpen] = useState(false);
@@ -131,11 +204,20 @@ export default function EtsyStyleHeader() {
   const [inqMobile, setInqMobile] = useState("");
   const [inqType, setInqType] = useState("");
   const [inqDescription, setInqDescription] = useState("");
-  const [inqErrors, setInqErrors] = useState<{ name?: string; mobile?: string; type?: string; description?: string }>({});
+  const [inqErrors, setInqErrors] = useState<{
+    name?: string;
+    mobile?: string;
+    type?: string;
+    description?: string;
+  }>({});
 
   // UI state
   const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: "success" | "error" | "info" | "warning" }>( {
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error" | "info" | "warning";
+  }>({
     open: false,
     message: "",
     severity: "info",
@@ -149,27 +231,38 @@ export default function EtsyStyleHeader() {
     if (value === "cart") setCartOpen(true);
   };
 
-  // Cart helpers
-  const addToCart = (product: { id: string; title: string }) => {
-    setCartItems((prev) => {
-      const existing = prev.find((p) => p.id === product.id);
-      if (existing) return prev.map((p) => (p.id === product.id ? { ...p, qty: p.qty + 1 } : p));
-      return [...prev, { ...product, qty: 1 }];
-    });
-  };
-  const removeFromCart = (id: string) => setCartItems((prev) => prev.filter((p) => p.id !== id));
+  // Initialize header cart from shared localStorage
+  useEffect(() => {
+    const stored = readCart();
+    const normalized = stored.map((s) => ({
+      id: s.id,
+      title: s.courseName || s.id,
+      qty: 1,
+    }));
+    setCartItems(normalized);
+  }, []);
 
-  // Drawer category click
-  const handleCategoryClick = (cat: { label: string; path: string }) => {
-    setDrawerOpen(false);
-    if (cat.label === "Request Service") {
-      setTimeout(() => setRequestDialogOpen(true), 150);
-      return;
-    }
-    navigate(cat.path);
-  };
+  // listen for same-tab custom event and cross-tab storage changes
+  useEffect(() => {
+    const onCartUpdated = (ev: Event) => {
+      const items = readCart();
+      setCartItems(items.map((s) => ({ id: s.id, title: s.courseName || s.id, qty: 1 })));
+    };
 
-  const pathname = typeof window !== "undefined" ? window.location.pathname : "/";
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === CART_KEY) {
+        const items = readCart();
+        setCartItems(items.map((s) => ({ id: s.id, title: s.courseName || s.id, qty: 1 })));
+      }
+    };
+
+    window.addEventListener("cartUpdated", onCartUpdated as EventListener);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("cartUpdated", onCartUpdated as EventListener);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
 
   // Search matching effect
   useEffect(() => {
@@ -185,6 +278,8 @@ export default function EtsyStyleHeader() {
     setResultsOpen(true);
     setHighlightIndex(m.length ? 0 : -1);
   }, [searchTerm]);
+
+  const onClickAway = () => setResultsOpen(false);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
@@ -209,8 +304,6 @@ export default function EtsyStyleHeader() {
     }
   };
 
-const onClickAway = () => setResultsOpen(false);
-
   const handleSelectMatch = (match: { label: string; path: string }) => {
     setSearchTerm("");
     setResultsOpen(false);
@@ -224,7 +317,8 @@ const onClickAway = () => setResultsOpen(false);
     if (!reqName.trim()) errs.name = "Please enter your name";
     if (!reqMobile.trim()) errs.mobile = "Please enter your mobile number";
     const digits = reqMobile.replace(/\D/g, "");
-    if (digits.length < 7 || digits.length > 15) errs.mobile = "Enter a valid phone number (include country code if available)";
+    if (digits.length < 7 || digits.length > 15)
+      errs.mobile = "Enter a valid phone number (include country code if available)";
     if (!reqType) errs.type = "Select a request type";
     if (!reqDesc.trim()) errs.desc = "Describe your request briefly";
     setReqErrors(errs);
@@ -236,7 +330,8 @@ const onClickAway = () => setResultsOpen(false);
     if (!inqName.trim()) errs.name = "Please enter name";
     if (!inqMobile.trim()) errs.mobile = "Please enter mobile";
     const digits = inqMobile.replace(/\D/g, "");
-    if (digits.length < 7 || digits.length > 15) errs.mobile = "Enter valid phone (include country code)";
+    if (digits.length < 7 || digits.length > 15)
+      errs.mobile = "Enter valid phone (include country code)";
     if (!inqType.trim()) errs.type = "Select inquiry type";
     if (!inqDescription.trim()) errs.description = "Please add a description";
     setInqErrors(errs);
@@ -250,7 +345,11 @@ const onClickAway = () => setResultsOpen(false);
     requestservicestype: string;
     description: string;
   }) => {
-    const message = `*Request / Inquiry Received*\n\n*Name:* ${messageData.name}\n*Mobile:* ${messageData.mobile}\n*Request Type:* ${messageData.requestservicestype}\n\n*Description:*\n${messageData.description}\n\n_Sent via buycourse.lk_`;
+    const message = `*Request / Inquiry Received*\n\n*Name:* ${
+      messageData.name
+    }\n*Mobile:* ${messageData.mobile}\n*Request Type:* ${
+      messageData.requestservicestype
+    }\n\n*Description:*\n${messageData.description}\n\n_Sent via buycourse.lk_`;
 
     const phone = "94767080553";
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
@@ -277,26 +376,36 @@ const onClickAway = () => setResultsOpen(false);
   const saveAndShare = async (type: "request" | "inquiry") => {
     if (type === "request") {
       if (!validateRequestForm()) {
-        setSnackbar({ open: true, message: "Please fill required fields.", severity: "error" });
+        setSnackbar({
+          open: true,
+          message: "Please fill required fields.",
+          severity: "error",
+        });
         return;
       }
     } else {
       if (!validateInquiryForm()) {
-        setSnackbar({ open: true, message: "Please fill required fields.", severity: "error" });
+        setSnackbar({
+          open: true,
+          message: "Please fill required fields.",
+          severity: "error",
+        });
         return;
       }
     }
 
-    const API_HOST = (import.meta && (import.meta as any).env && (import.meta as any).env.VITE_API_HOST) as string | undefined;
+    const API_HOST = (import.meta as any)?.env?.VITE_API_HOST as string | undefined;
     if (!API_HOST) {
-      setSnackbar({ open: true, message: "API host not configured (VITE_API_HOST).", severity: "error" });
+      setSnackbar({
+        open: true,
+        message: "API host not configured (VITE_API_HOST).",
+        severity: "error",
+      });
       return;
     }
 
     setLoading(true);
 
-    // Build payload according to requested schema:
-    // required: name, mobile, requestservicestype, description
     const payloadBase: any = {
       name: type === "request" ? reqName : inqName,
       mobile: type === "request" ? reqMobile : inqMobile,
@@ -316,11 +425,13 @@ const onClickAway = () => setResultsOpen(false);
         throw new Error(err?.message || `Server responded with ${resp.status}`);
       }
 
-      // Optionally use respJson if your backend returns an id
-        await resp.json().catch(() => {});
+      await resp.json().catch(() => {});
 
-
-      setSnackbar({ open: true, message: "Saved successfully — opening WhatsApp...", severity: "success" });
+      setSnackbar({
+        open: true,
+        message: "Saved successfully — opening WhatsApp...",
+        severity: "success",
+      });
 
       const messageData = {
         name: payloadBase.name || "N/A",
@@ -340,7 +451,11 @@ const onClickAway = () => setResultsOpen(false);
         }
       }, 350);
     } catch (error: any) {
-      setSnackbar({ open: true, message: error?.message || "Failed to save.", severity: "error" });
+      setSnackbar({
+        open: true,
+        message: error?.message || "Failed to save.",
+        severity: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -352,6 +467,108 @@ const onClickAway = () => setResultsOpen(false);
     window.addEventListener("openInquiry", handler);
     return () => window.removeEventListener("openInquiry", handler);
   }, []);
+
+  // ---------- CART helpers that use inline util ----------
+  const addToCart = (product: {
+    id: string;
+    title: string;
+    coursePrice?: any;
+    courseImage?: string;
+    courseDuration?: string;
+    courseCategory?: string;
+  }) => {
+    const storedItem: StoredCourse = {
+      id: product.id,
+      courseName: product.title,
+      coursePrice: product.coursePrice,
+      courseImage: product.courseImage,
+      courseDuration: product.courseDuration,
+      courseCategory: product.courseCategory,
+      addedAt: Date.now(),
+    };
+    addItem(storedItem);
+    const items = readCart();
+    setCartItems(items.map((s) => ({ id: s.id, title: s.courseName || s.id, qty: 1 })));
+    setSnackbar({ open: true, message: "Added to cart", severity: "success" });
+  };
+
+  const removeFromCart = (id: string) => {
+    removeItemById(id);
+    const items = readCart();
+    setCartItems(items.map((s) => ({ id: s.id, title: s.courseName || s.id, qty: 1 })));
+    setSnackbar({ open: true, message: "Removed from cart", severity: "info" });
+  };
+
+  const handleClearCart = () => {
+    clearCart();
+    setCartItems([]);
+    setSnackbar({ open: true, message: "Cleared cart", severity: "info" });
+  };
+
+  // expose addToCart globally (optional)
+  useEffect(() => {
+    (window as any).__BUYCOURSE_ADD_TO_CART = (p: any) => addToCart(p);
+    return () => {
+      delete (window as any).__BUYCOURSE_ADD_TO_CART;
+    };
+  }, []);
+
+  // -------------------- WhatsApp CHECKOUT (NEW) --------------------
+  const WA_NUMBER_CHECKOUT = "94767080553";
+
+  const formatDate = (ts?: number) => {
+    if (!ts) return "N/A";
+    try {
+      return new Date(ts).toLocaleString();
+    } catch {
+      return String(ts);
+    }
+  };
+
+  const formatPrice = (v: any) => {
+    const n = Number(v || 0);
+    if (isNaN(n)) return "—";
+    return `LKR ${n.toLocaleString()}`;
+  };
+
+  const openWhatsAppCheckout = () => {
+    const stored = readCart();
+    const totalPriceNumber = stored.reduce(
+      (s, c) => s + (Number(c.coursePrice) || 0),
+      0
+    );
+
+    const orderNumber = `ORD-${Date.now()}`;
+    const orderDate = formatDate(Date.now());
+
+    let message = `*New Course Order*%0A%0A`;
+    message += `*Order Number:* ${orderNumber}%0A`;
+    message += `*Order Date:* ${orderDate}%0A`;
+    message += `*Items:* ${stored.length}%0A%0A`;
+
+    stored.forEach((it, idx) => {
+      const name = it.courseName || "N/A";
+      const price = formatPrice(it.coursePrice);
+      const category = it.courseCategory || "N/A";
+      const duration = it.courseDuration || "N/A";
+      const added = it.addedAt ? formatDate(it.addedAt) : "N/A";
+
+      message += `*${idx + 1}. ${name}*%0A`;
+      message += `Price: ${price}%0A`;
+      message += `Category: ${category}%0A`;
+      message += `Duration: ${duration}%0A`;
+      message += `Added: ${added}%0A%0A`;
+    });
+
+    message += `*Total Items:* ${stored.length}%0A`;
+    message += `*Total Price:* ${
+      totalPriceNumber ? `LKR ${totalPriceNumber.toLocaleString()}` : "—"
+    }%0A%0A`;
+    message += `_Sent via buycourse.lk WhatsApp Checkout_`;
+
+    const url = `https://wa.me/${WA_NUMBER_CHECKOUT}?text=${message}`;
+    window.open(url, "_blank");
+  };
 
   return (
     <Box sx={{ fontFamily: Montserrat }}>
@@ -377,9 +594,20 @@ const onClickAway = () => setResultsOpen(false);
             fontFamily: Montserrat,
           }}
         >
-          {/* Left Logo */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, fontFamily: Montserrat }}>
-            <Link to="/" aria-label="Go to home" style={{ textDecoration: "none", display: "inline-block" }}>
+          {/* Left Logo + Categories */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              fontFamily: Montserrat,
+            }}
+          >
+            <Link
+              to="/"
+              aria-label="Go to home"
+              style={{ textDecoration: "none", display: "inline-block" }}
+            >
               <Box
                 component="img"
                 src={logoUrl}
@@ -410,7 +638,10 @@ const onClickAway = () => setResultsOpen(false);
                 role="button"
               >
                 <MenuIcon fontSize="small" />
-                <Typography variant="body2" sx={{ fontWeight: 500, fontFamily: Montserrat }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 500, fontFamily: Montserrat }}
+                >
                   Categories
                 </Typography>
               </Box>
@@ -423,7 +654,10 @@ const onClickAway = () => setResultsOpen(false);
               <SearchContainer ref={searchRef}>
                 <StyledInput
                   placeholder="Search for anything (e.g. Tamil Courses)"
-                  inputProps={{ "aria-label": "search", style: { fontFamily: Montserrat } }}
+                  inputProps={{
+                    "aria-label": "search",
+                    style: { fontFamily: Montserrat },
+                  }}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -436,8 +670,10 @@ const onClickAway = () => setResultsOpen(false);
                   aria-label="search-button"
                   onClick={() => {
                     if (matches.length > 0) {
-                      const selected = matches[highlightIndex > -1 ? highlightIndex : 0];
-                      if (selected.label === "Request Service") setRequestDialogOpen(true);
+                      const selected =
+                        matches[highlightIndex > -1 ? highlightIndex : 0];
+                      if (selected.label === "Request Service")
+                        setRequestDialogOpen(true);
                       else navigate(selected.path);
                       setSearchTerm("");
                       setResultsOpen(false);
@@ -470,10 +706,21 @@ const onClickAway = () => setResultsOpen(false);
                   >
                     {matches.length === 0 ? (
                       <Box sx={{ p: 2 }}>
-                        <Typography variant="body2" sx={{ color: "#666", fontFamily: Montserrat }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "#666", fontFamily: Montserrat }}
+                        >
                           No results for “{searchTerm}”
                         </Typography>
-                        <Typography variant="caption" sx={{ display: "block", mt: 1, color: "#888", fontFamily: Montserrat }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display: "block",
+                            mt: 1,
+                            color: "#888",
+                            fontFamily: Montserrat,
+                          }}
+                        >
                           Try different keywords or check categories.
                         </Typography>
                       </Box>
@@ -482,13 +729,34 @@ const onClickAway = () => setResultsOpen(false);
                         {matches.map((m, idx) => {
                           const isHighlighted = idx === highlightIndex;
                           return (
-                            <ListItem key={m.path} disablePadding sx={{ background: isHighlighted ? "rgba(10,83,151,0.08)" : "transparent", fontFamily: Montserrat }}>
-                              <ListItemButton onMouseEnter={() => setHighlightIndex(idx)} onClick={() => handleSelectMatch(m)} component="div" sx={{ px: 2, py: 1.25 }}>
+                            <ListItem
+                              key={m.path}
+                              disablePadding
+                              sx={{
+                                background: isHighlighted
+                                  ? "rgba(10,83,151,0.08)"
+                                  : "transparent",
+                                fontFamily: Montserrat,
+                              }}
+                            >
+                              <ListItemButton
+                                onMouseEnter={() => setHighlightIndex(idx)}
+                                onClick={() => handleSelectMatch(m)}
+                                component="div"
+                                sx={{ px: 2, py: 1.25 }}
+                              >
                                 <ListItemText
                                   primary={m.label}
-                                  primaryTypographyProps={{ sx: { fontWeight: 600, fontFamily: Montserrat } }}
+                                  primaryTypographyProps={{
+                                    sx: {
+                                      fontWeight: 600,
+                                      fontFamily: Montserrat,
+                                    },
+                                  }}
                                   secondary={m.path}
-                                  secondaryTypographyProps={{ sx: { fontFamily: Montserrat } }}
+                                  secondaryTypographyProps={{
+                                    sx: { fontFamily: Montserrat },
+                                  }}
                                 />
                               </ListItemButton>
                             </ListItem>
@@ -503,27 +771,39 @@ const onClickAway = () => setResultsOpen(false);
           )}
 
           {/* Right icons */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, fontFamily: Montserrat }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              fontFamily: Montserrat,
+            }}
+          >
             {showSearchAndRight ? (
-              <>
-                <IconButton
-                  onClick={() => setCartOpen(true)}
-                  sx={{
-                    bgcolor: "#E7E5E4",
-                    borderRadius: "50%",
-                    p: 1,
-                    "&:hover": { bgcolor: "#dcdcdc" },
-                    fontFamily: Montserrat,
-                  }}
-                  aria-label="open-cart"
+              <IconButton
+                onClick={() => setCartOpen(true)}
+                sx={{
+                  bgcolor: "#E7E5E4",
+                  borderRadius: "50%",
+                  p: 1,
+                  "&:hover": { bgcolor: "#dcdcdc" },
+                  fontFamily: Montserrat,
+                }}
+                aria-label="open-cart"
+              >
+                <Badge
+                  badgeContent={cartItems.reduce((s, i) => s + i.qty, 0)}
+                  color="error"
                 >
-                  <Badge badgeContent={cartItems.reduce((s, i) => s + i.qty, 0)} color="error">
-                    <ShoppingBagIcon sx={{ color: "#555" }} />
-                  </Badge>
-                </IconButton>
-              </>
+                  <ShoppingBagIcon sx={{ color: "#555" }} />
+                </Badge>
+              </IconButton>
             ) : (
-              <IconButton onClick={() => setDrawerOpen(true)} sx={{ color: "#555", fontFamily: Montserrat }} aria-label="open-menu">
+              <IconButton
+                onClick={() => setDrawerOpen(true)}
+                sx={{ color: "#555", fontFamily: Montserrat }}
+                aria-label="open-menu"
+              >
                 <MenuIcon />
               </IconButton>
             )}
@@ -531,17 +811,45 @@ const onClickAway = () => setResultsOpen(false);
         </Toolbar>
       </AppBar>
 
-      {/* LEFT Drawer */}
-      <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)} ModalProps={{ keepMounted: true }} PaperProps={{ sx: { width: 320, zIndex: (t) => t.zIndex.drawer + 3, fontFamily: Montserrat } }}>
+      {/* LEFT Drawer (categories) */}
+      <Drawer
+        anchor="left"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        ModalProps={{ keepMounted: true }}
+        PaperProps={{
+          sx: { width: 320, zIndex: (t) => t.zIndex.drawer + 3, fontFamily: Montserrat },
+        }}
+      >
         <Box sx={{ p: 2 }}>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 2,
+            }}
+          >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Link to="/" aria-label="Go to home" style={{ textDecoration: "none", display: "inline-block" }}>
-                <Box component="img" src={logoUrl} alt="Logo" sx={{ width: 200, objectFit: "contain" }} />
+              <Link
+                to="/"
+                aria-label="Go to home"
+                style={{ textDecoration: "none", display: "inline-block" }}
+              >
+                <Box
+                  component="img"
+                  src={logoUrl}
+                  alt="Logo"
+                  sx={{ width: 200, objectFit: "contain" }}
+                />
               </Link>
             </Box>
 
-            <IconButton onClick={() => setDrawerOpen(false)} aria-label="close-categories" sx={{ fontFamily: Montserrat }}>
+            <IconButton
+              onClick={() => setDrawerOpen(false)}
+              aria-label="close-categories"
+              sx={{ fontFamily: Montserrat }}
+            >
               <CloseIcon />
             </IconButton>
           </Box>
@@ -550,16 +858,59 @@ const onClickAway = () => setResultsOpen(false);
 
           <List>
             {categories.map((cat) => {
+              const pathname =
+                typeof window !== "undefined" ? window.location.pathname : "/";
               const isActive = pathname === cat.path;
               return (
                 <ListItem disablePadding key={cat.path} sx={{ fontFamily: Montserrat }}>
                   {cat.label === "Request Service" ? (
-                    <ListItemButton onClick={() => handleCategoryClick(cat)} selected={isActive} sx={{ textDecoration: "none", color: "inherit", "&.Mui-selected": { backgroundColor: "rgba(0,0,0,0.06)" } }}>
-                      <ListItemText primary={cat.label} primaryTypographyProps={{ sx: { fontFamily: Montserrat, fontWeight: isActive ? 700 : 500 } }} />
+                    <ListItemButton
+                      onClick={() => {
+                        setDrawerOpen(false);
+                        setRequestDialogOpen(true);
+                      }}
+                      selected={isActive}
+                      sx={{
+                        textDecoration: "none",
+                        color: "inherit",
+                        "&.Mui-selected": {
+                          backgroundColor: "rgba(0,0,0,0.06)",
+                        },
+                      }}
+                    >
+                      <ListItemText
+                        primary={cat.label}
+                        primaryTypographyProps={{
+                          sx: {
+                            fontFamily: Montserrat,
+                            fontWeight: isActive ? 700 : 500,
+                          },
+                        }}
+                      />
                     </ListItemButton>
                   ) : (
-                    <ListItemButton component={Link} to={cat.path} onClick={() => handleCategoryClick(cat)} selected={isActive} sx={{ textDecoration: "none", color: "inherit", "&.Mui-selected": { backgroundColor: "rgba(0,0,0,0.06)" } }}>
-                      <ListItemText primary={cat.label} primaryTypographyProps={{ sx: { fontFamily: Montserrat, fontWeight: isActive ? 700 : 500 } }} />
+                    <ListItemButton
+                      component={Link}
+                      to={cat.path}
+                      onClick={() => setDrawerOpen(false)}
+                      selected={isActive}
+                      sx={{
+                        textDecoration: "none",
+                        color: "inherit",
+                        "&.Mui-selected": {
+                          backgroundColor: "rgba(0,0,0,0.06)",
+                        },
+                      }}
+                    >
+                      <ListItemText
+                        primary={cat.label}
+                        primaryTypographyProps={{
+                          sx: {
+                            fontFamily: Montserrat,
+                            fontWeight: isActive ? 700 : 500,
+                          },
+                        }}
+                      />
                     </ListItemButton>
                   )}
                 </ListItem>
@@ -569,67 +920,292 @@ const onClickAway = () => setResultsOpen(false);
         </Box>
       </Drawer>
 
-      {/* Cart Drawer */}
+      {/* Cart Drawer (header cart, shows all localStorage items) */}
       <Drawer anchor="right" open={cartOpen} onClose={() => setCartOpen(false)}>
-        <Box sx={{ width: 320, fontFamily: Montserrat, py: 2 }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2 }}>
+        <Box
+          sx={{
+            width: 360,
+            fontFamily: Montserrat,
+            py: 2,
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              px: 2,
+            }}
+          >
             <Typography variant="h6" sx={{ fontFamily: Montserrat }}>
               Your Cart
             </Typography>
-            <Button size="small" onClick={() => setCartItems([])} sx={{ fontFamily: Montserrat }}>
+            <Button
+              size="small"
+              onClick={handleClearCart}
+              sx={{ fontFamily: Montserrat }}
+            >
               Clear
             </Button>
           </Box>
 
           <Divider sx={{ my: 1 }} />
 
-          {cartItems.length === 0 ? (
-            <Box sx={{ p: 3, textAlign: "center", color: "#666", fontFamily: Montserrat }}>
-              <Typography variant="body1" sx={{ fontFamily: Montserrat }}>
-                No products available
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1, fontFamily: Montserrat }}>
-                Add items to your cart and they'll appear here.
-              </Typography>
-            </Box>
-          ) : (
-            <List>
-              {cartItems.map((item) => (
-                <ListItem
-                  key={item.id}
-                  secondaryAction={
-                    <Box sx={{ display: "flex", gap: 1, alignItems: "center", fontFamily: Montserrat }}>
-                      <Button size="small" onClick={() => removeFromCart(item.id)} aria-label={`remove-${item.id}`} sx={{ fontFamily: Montserrat }}>
-                        -
+          {(() => {
+            const stored = readCart();
+            const totalPriceNumber = stored.reduce(
+              (s, c) => s + (Number(c.coursePrice) || 0),
+              0
+            );
+
+            if (stored.length === 0) {
+              return (
+                <Box
+                  sx={{
+                    p: 3,
+                    textAlign: "center",
+                    color: "#666",
+                    fontFamily: Montserrat,
+                  }}
+                >
+                  <Typography variant="body1" sx={{ fontFamily: Montserrat }}>
+                    No products available
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ mt: 1, fontFamily: Montserrat }}
+                  >
+                    Add items to your cart and they'll appear here.
+                  </Typography>
+                </Box>
+              );
+            }
+
+            return (
+              <>
+                <Box sx={{ px: 1, overflowY: "auto", flex: 1 }}>
+                  {stored.map((it) => {
+                    const id = it.id;
+                    const title = it.courseName || "Untitled";
+                    const price = formatPrice(it.coursePrice);
+                    const category = it.courseCategory || "";
+                    const duration = it.courseDuration || "";
+                    const thumb = it.courseImage || "";
+
+                    return (
+                      <Box
+                        key={id}
+                        sx={{
+                          display: "flex",
+                          gap: 2,
+                          alignItems: "flex-start",
+                          background: "#FAFAFA",
+                          borderRadius: 1,
+                          p: 1.25,
+                          mb: 1.25,
+                          border: "1px solid rgba(0,0,0,0.04)",
+                        }}
+                      >
+                        <Box
+                          component="img"
+                          src={thumb || previewImg}
+                          alt={title}
+                          sx={{
+                            width: 72,
+                            height: 56,
+                            objectFit: "cover",
+                            borderRadius: 1,
+                            flexShrink: 0,
+                            border: "1px solid rgba(0,0,0,0.06)",
+                          }}
+                        />
+
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography
+                            noWrap
+                            variant="subtitle2"
+                            sx={{
+                              fontWeight: 700,
+                              fontFamily: Montserrat,
+                            }}
+                          >
+                            {title}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              display: "block",
+                              color: "#6b7280",
+                              mt: 0.5,
+                              fontFamily: Montserrat,
+                            }}
+                          >
+                            {duration ? `${duration} • ` : ""}
+                            {category || "—"}
+                          </Typography>
+
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              mt: 1,
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: 600,
+                                fontFamily: Montserrat,
+                              }}
+                            >
+                              {price}
+                            </Typography>
+
+                            <Button
+                              size="small"
+                              onClick={() => removeFromCart(id)}
+                              variant="outlined"
+                              sx={{
+                                textTransform: "uppercase",
+                                borderRadius: 1,
+                                borderColor: "rgba(10,83,151,0.25)",
+                                color: "rgb(10,83,151)",
+                                fontWeight: 600,
+                                fontFamily: Montserrat,
+                                px: 1.25,
+                                py: 0.5,
+                                minWidth: 84,
+                                "&:hover": {
+                                  background: "rgba(10,83,151,0.04)",
+                                },
+                              }}
+                              aria-label={`remove-${id}`}
+                            >
+                              REMOVE
+                            </Button>
+                          </Box>
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+
+                {/* totals / checkout area */}
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    borderTop: "1px solid rgba(0,0,0,0.04)",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 1,
+                    }}
+                  >
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "#6b7280", fontFamily: Montserrat }}
+                      >
+                        Total
+                      </Typography>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          mt: 0.25,
+                          fontWeight: 800,
+                          fontFamily: Montserrat,
+                        }}
+                      >
+                        {totalPriceNumber
+                          ? `LKR ${totalPriceNumber.toLocaleString()}`
+                          : "LKR 0"}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "#9CA3AF",
+                          display: "block",
+                          mt: 0.5,
+                          fontFamily: Montserrat,
+                        }}
+                      >
+                        {stored.length} item
+                        {stored.length > 1 ? "s" : ""}
+                      </Typography>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 1,
+                        flexDirection: "column",
+                        width: 160,
+                      }}
+                    >
+                      <Button
+                        variant="outlined"
+                        onClick={handleClearCart}
+                        disabled={stored.length === 0}
+                        sx={{
+                          fontFamily: Montserrat,
+                          textTransform: "none",
+                          height: 40,
+                        }}
+                      >
+                        CLEAR
                       </Button>
-                      <Typography sx={{ minWidth: 20, textAlign: "center", fontFamily: Montserrat }}>{item.qty}</Typography>
-                      <Button size="small" onClick={() => addToCart({ id: item.id, title: item.title })} aria-label={`add-${item.id}`} sx={{ fontFamily: Montserrat }}>
-                        +
+
+                      <Button
+                        variant="contained"
+                        onClick={openWhatsAppCheckout}
+                        disabled={stored.length === 0}
+                        sx={{
+                          background: "rgb(10, 83, 151)",
+                          fontFamily: Montserrat,
+                          height: 40,
+                        }}
+                      >
+                        WHATSAPP
                       </Button>
                     </Box>
-                  }
-                >
-                  <ListItemText primary={item.title} primaryTypographyProps={{ sx: { fontWeight: 600, fontFamily: Montserrat } }} />
-                </ListItem>
-              ))}
-            </List>
-          )}
-
-          <Box sx={{ px: 2, py: 2 }}>
-            <Button fullWidth variant="contained" disabled={cartItems.length === 0} sx={{ fontFamily: Montserrat, background: "rgb(10, 83, 151)" }}>
-              Proceed to checkout
-            </Button>
-          </Box>
+                  </Box>
+                </Box>
+              </>
+            );
+          })()}
         </Box>
       </Drawer>
 
-      {/* Request Service Dialog (now save -> share) */}
-      <Dialog open={requestDialogOpen} onClose={() => setRequestDialogOpen(false)} fullWidth maxWidth="sm" aria-labelledby="request-dialog-title">
+      {/* Request Service Dialog */}
+      <Dialog
+        open={requestDialogOpen}
+        onClose={() => setRequestDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        aria-labelledby="request-dialog-title"
+      >
         <DialogTitle id="request-dialog-title" sx={{ fontFamily: Montserrat }}>
           Request Service
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1, fontFamily: Montserrat }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              mt: 1,
+              fontFamily: Montserrat,
+            }}
+          >
             <TextField
               label="Name"
               value={reqName}
@@ -653,8 +1229,15 @@ const onClickAway = () => setResultsOpen(false);
               InputProps={{ sx: { fontFamily: Montserrat } }}
               FormHelperTextProps={{ sx: { fontFamily: Montserrat } }}
             />
-            <FormControl fullWidth error={!!reqErrors.type} sx={{ fontFamily: Montserrat }}>
-              <InputLabel id="req-type-label" sx={{ fontFamily: Montserrat }}>
+            <FormControl
+              fullWidth
+              error={!!reqErrors.type}
+              sx={{ fontFamily: Montserrat }}
+            >
+              <InputLabel
+                id="req-type-label"
+                sx={{ fontFamily: Montserrat }}
+              >
                 Request type
               </InputLabel>
               <Select
@@ -665,17 +1248,30 @@ const onClickAway = () => setResultsOpen(false);
                 sx={{ fontFamily: Montserrat }}
                 inputProps={{ sx: { fontFamily: Montserrat } }}
               >
-                <MenuItem value={"New course request"} sx={{ fontFamily: Montserrat }}>
+                <MenuItem
+                  value={"New course request"}
+                  sx={{ fontFamily: Montserrat }}
+                >
                   New course request
                 </MenuItem>
-                <MenuItem value={"Premium Account Request"} sx={{ fontFamily: Montserrat }}>
+                <MenuItem
+                  value={"Premium Account Request"}
+                  sx={{ fontFamily: Montserrat }}
+                >
                   Premium Account Request
                 </MenuItem>
-                <MenuItem value={"Any Licence Service"} sx={{ fontFamily: Montserrat }}>
+                <MenuItem
+                  value={"Any Licence Service"}
+                  sx={{ fontFamily: Montserrat }}
+                >
                   Any Licence Service
                 </MenuItem>
               </Select>
-              {reqErrors.type && <FormHelperText sx={{ fontFamily: Montserrat }}>{reqErrors.type}</FormHelperText>}
+              {reqErrors.type && (
+                <FormHelperText sx={{ fontFamily: Montserrat }}>
+                  {reqErrors.type}
+                </FormHelperText>
+              )}
             </FormControl>
             <TextField
               label="Description"
@@ -693,29 +1289,55 @@ const onClickAway = () => setResultsOpen(false);
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setRequestDialogOpen(false)} sx={{ fontFamily: Montserrat }}>
+          <Button
+            onClick={() => setRequestDialogOpen(false)}
+            sx={{ fontFamily: Montserrat }}
+          >
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={() => saveAndShare("request")}
-            sx={{ background: "rgb(10, 83, 151)", fontFamily: Montserrat, display: "inline-flex", alignItems: "center", gap: 1 }}
+            sx={{
+              background: "rgb(10, 83, 151)",
+              fontFamily: Montserrat,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 1,
+            }}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : null}
+            {loading ? (
+              <CircularProgress size={18} sx={{ color: "#fff" }} />
+            ) : null}
             Save & Send via WhatsApp
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Inquiry Dialog (single button: save -> open WhatsApp) */}
-      <Dialog open={inquiryDialogOpen} onClose={() => setInquiryDialogOpen(false)} fullWidth maxWidth="sm" aria-labelledby="inquiry-dialog-title">
+      {/* Inquiry Dialog */}
+      <Dialog
+        open={inquiryDialogOpen}
+        onClose={() => setInquiryDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        aria-labelledby="inquiry-dialog-title"
+      >
         <DialogTitle id="inquiry-dialog-title" sx={{ fontFamily: Montserrat }}>
           New Inquiry
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ display: "flex", gap: 2, mt: 1, fontFamily: Montserrat }}>
-            <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box
+            sx={{ display: "flex", gap: 2, mt: 1, fontFamily: Montserrat }}
+          >
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+              }}
+            >
               <TextField
                 label="Name"
                 value={inqName}
@@ -739,8 +1361,15 @@ const onClickAway = () => setResultsOpen(false);
                 InputProps={{ sx: { fontFamily: Montserrat } }}
                 FormHelperTextProps={{ sx: { fontFamily: Montserrat } }}
               />
-              <FormControl fullWidth error={!!inqErrors.type} sx={{ fontFamily: Montserrat }}>
-                <InputLabel id="inq-type-label" sx={{ fontFamily: Montserrat }}>
+              <FormControl
+                fullWidth
+                error={!!inqErrors.type}
+                sx={{ fontFamily: Montserrat }}
+              >
+                <InputLabel
+                  id="inq-type-label"
+                  sx={{ fontFamily: Montserrat }}
+                >
                   Inquiry type
                 </InputLabel>
                 <Select
@@ -751,20 +1380,33 @@ const onClickAway = () => setResultsOpen(false);
                   sx={{ fontFamily: Montserrat }}
                   inputProps={{ sx: { fontFamily: Montserrat } }}
                 >
-                  <MenuItem value={"Product question"} sx={{ fontFamily: Montserrat }}>
+                  <MenuItem
+                    value={"Product question"}
+                    sx={{ fontFamily: Montserrat }}
+                  >
                     Product question
                   </MenuItem>
-                  <MenuItem value={"Order issue"} sx={{ fontFamily: Montserrat }}>
+                  <MenuItem
+                    value={"Order issue"}
+                    sx={{ fontFamily: Montserrat }}
+                  >
                     Order issue
                   </MenuItem>
-                  <MenuItem value={"Refund / Return"} sx={{ fontFamily: Montserrat }}>
+                  <MenuItem
+                    value={"Refund / Return"}
+                    sx={{ fontFamily: Montserrat }}
+                  >
                     Refund / Return
                   </MenuItem>
                   <MenuItem value={"Other"} sx={{ fontFamily: Montserrat }}>
                     Other
                   </MenuItem>
                 </Select>
-                {inqErrors.type && <FormHelperText sx={{ fontFamily: Montserrat }}>{inqErrors.type}</FormHelperText>}
+                {inqErrors.type && (
+                  <FormHelperText sx={{ fontFamily: Montserrat }}>
+                    {inqErrors.type}
+                  </FormHelperText>
+                )}
               </FormControl>
 
               <TextField
@@ -772,7 +1414,9 @@ const onClickAway = () => setResultsOpen(false);
                 value={inqDescription}
                 onChange={(e) => setInqDescription(e.target.value)}
                 error={!!inqErrors.description}
-                helperText={inqErrors.description || "Give as much detail as needed"}
+                helperText={
+                  inqErrors.description || "Give as much detail as needed"
+                }
                 multiline
                 rows={4}
                 fullWidth
@@ -782,8 +1426,24 @@ const onClickAway = () => setResultsOpen(false);
               />
             </Box>
 
-            <Box sx={{ width: 140, display: "flex", flexDirection: "column", gap: 1 }}>
-              <Box sx={{ fontFamily: Montserrat, fontSize: "0.85rem", color: "#333", fontWeight: 600 }}>Preview</Box>
+            <Box
+              sx={{
+                width: 140,
+                display: "flex",
+                flexDirection: "column",
+                gap: 1,
+              }}
+            >
+              <Box
+                sx={{
+                  fontFamily: Montserrat,
+                  fontSize: "0.85rem",
+                  color: "#333",
+                  fontWeight: 600,
+                }}
+              >
+                Preview
+              </Box>
               <Box
                 component="img"
                 src={previewImg}
@@ -796,22 +1456,41 @@ const onClickAway = () => setResultsOpen(false);
                   border: "1px solid rgba(0,0,0,0.06)",
                 }}
               />
-              <Typography sx={{ fontSize: "0.75rem", color: "#666", fontFamily: Montserrat }}>Message will be sent in the format shown (no order fields).</Typography>
+              <Typography
+                sx={{
+                  fontSize: "0.75rem",
+                  color: "#666",
+                  fontFamily: Montserrat,
+                }}
+              >
+                Message will be sent in the format shown (no order fields).
+              </Typography>
             </Box>
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setInquiryDialogOpen(false)} sx={{ fontFamily: Montserrat }}>
+          <Button
+            onClick={() => setInquiryDialogOpen(false)}
+            sx={{ fontFamily: Montserrat }}
+          >
             Cancel
           </Button>
 
           <Button
             variant="contained"
             onClick={() => saveAndShare("inquiry")}
-            sx={{ background: "rgb(10, 83, 151)", fontFamily: Montserrat, display: "inline-flex", alignItems: "center", gap: 1 }}
+            sx={{
+              background: "rgb(10, 83, 151)",
+              fontFamily: Montserrat,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 1,
+            }}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : null}
+            {loading ? (
+              <CircularProgress size={18} sx={{ color: "#fff" }} />
+            ) : null}
             Save & Send via WhatsApp
           </Button>
         </DialogActions>
@@ -863,15 +1542,20 @@ const onClickAway = () => setResultsOpen(false);
                     sx={{
                       p: 1.5,
                       borderRadius: "50%",
-                      bgcolor: bottomNavValue === item.value ? "#000" : "transparent",
-                      color: bottomNavValue === item.value ? "#fff" : iconColor,
+                      bgcolor:
+                        bottomNavValue === item.value ? "#000" : "transparent",
+                      color:
+                        bottomNavValue === item.value ? "#fff" : iconColor,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       transition: "all 0.25s ease",
                       "&:hover": {
                         transform: "scale(1.15)",
-                        bgcolor: bottomNavValue === item.value ? "#000" : "rgba(0,0,0,0.08)",
+                        bgcolor:
+                          bottomNavValue === item.value
+                            ? "#000"
+                            : "rgba(0,0,0,0.08)",
                       },
                       fontFamily: Montserrat,
                     }}
@@ -885,7 +1569,8 @@ const onClickAway = () => setResultsOpen(false);
                     fontFamily: Montserrat,
                     fontSize: "0.7rem",
                     marginTop: "4px",
-                    color: bottomNavValue === item.value ? "#000" : "#777",
+                    color:
+                      bottomNavValue === item.value ? "#000" : "#777",
                   },
                 }}
               />
@@ -895,8 +1580,27 @@ const onClickAway = () => setResultsOpen(false);
       )}
 
       {/* Snackbar */}
-      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar((s) => ({ ...s, open: false }))} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
-        <Alert onClose={() => setSnackbar((s) => ({ ...s, open: false }))} severity={snackbar.severity} sx={{ fontFamily: Montserrat }}>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() =>
+          setSnackbar((s) => ({
+            ...s,
+            open: false,
+          }))
+        }
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() =>
+            setSnackbar((s) => ({
+              ...s,
+              open: false,
+            }))
+          }
+          severity={snackbar.severity}
+          sx={{ fontFamily: Montserrat }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
