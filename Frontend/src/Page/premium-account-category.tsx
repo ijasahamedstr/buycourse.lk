@@ -45,17 +45,6 @@ export default function AllAccountsWithCategory() {
     return "all-accounts";
   };
 
-  const SLUG_TITLE_MAP: Record<string, string> = {
-    "all-accounts": "All Accounts",
-    "digital-keys": "Digital Keys",
-    games: "Games",
-    ott: "OTT Services",
-    premium: "Premium",
-    "streaming-combos": "Streaming Combos",
-    utilities: "Utilities",
-    vpn: "VPN",
-  };
-
   const activeSlug = getActiveSlugFromPath();
 
   // slider drag state
