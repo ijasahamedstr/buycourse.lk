@@ -54,6 +54,7 @@ const formatPrice = (price: any) => {
 
 /* ---------- localStorage helpers ---------- */
 const CART_KEY = "cartCourses";
+const OTT_CART_KEY = "ottCart"; // OTT cart key used in PremiumaccountView etc.
 
 type StoredCourse = {
   id: string;
@@ -82,6 +83,23 @@ const writeCart = (items: StoredCourse[]) => {
     localStorage.setItem(CART_KEY, JSON.stringify(items));
   } catch {
     // ignore localStorage errors
+  }
+};
+
+/** Clear cart-related localStorage for ALL pages (courses + OTT) */
+const clearAllCartStorage = () => {
+  try {
+    localStorage.removeItem(CART_KEY);
+    localStorage.removeItem(OTT_CART_KEY);
+
+    // optional event other components can listen for (header, OTT page, etc.)
+    try {
+      window.dispatchEvent(new Event("cartCleared"));
+    } catch {
+      // ignore
+    }
+  } catch {
+    // ignore
   }
 };
 
@@ -332,7 +350,6 @@ export default function Couresview() {
   }, 0);
 
   /* ---------- WhatsApp checkout ---------- */
-  // change this if you want a different recipient
   const WA_NUMBER = "94767080553";
 
   const openWhatsApp = () => {
@@ -341,7 +358,7 @@ export default function Couresview() {
     const orderDate = formatDate(Date.now());
 
     // build message header
-    let message = `*New Course Order*%0A%0A`; // encoded newlines later; using %0A ensures exact line breaks in wa.me query
+    let message = `*New Course Order*%0A%0A`;
 
     // order meta
     message += `*Order Number:* ${orderNumber}%0A`;
@@ -356,7 +373,6 @@ export default function Couresview() {
       const duration = it.courseDuration || "N/A";
       const added = it.addedAt ? formatDate(it.addedAt) : "N/A";
 
-      // Add numbered item block
       message += `*${idx + 1}. ${name}*%0A`;
       message += `Price: ${price}%0A`;
       message += `Category: ${category}%0A`;
@@ -369,10 +385,7 @@ export default function Couresview() {
     message += `*Total Price:* ${totalPriceNumber ? `LKR ${totalPriceNumber}` : "—"}%0A%0A`;
     message += `_Sent via buycourse.lk WhatsApp Checkout_`;
 
-    // compose URL
     const url = `https://wa.me/${WA_NUMBER}?text=${message}`;
-
-    // open WhatsApp (will open web or app depending on platform)
     window.open(url, "_blank");
   };
 
@@ -421,7 +434,6 @@ export default function Couresview() {
         onClose={() => setSnack(null)}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        {/* show different severities */}
         <Alert onClose={() => setSnack(null)} severity={snack?.severity ?? "info"}>
           {snack?.text}
         </Alert>
@@ -454,7 +466,9 @@ export default function Couresview() {
 
                 <Divider sx={{ my: 2 }} />
 
-                <Typography sx={{ mb: 2, fontFamily: "'Montserrat', sans-serif" }}>{mapped.courseDescription}</Typography>
+                <Typography sx={{ mb: 2, fontFamily: "'Montserrat', sans-serif" }}>
+                  {mapped.courseDescription}
+                </Typography>
 
                 <Divider sx={{ my: 2 }} />
 
@@ -467,12 +481,17 @@ export default function Couresview() {
                     <Chip
                       label={modulesSubdomain}
                       size="small"
-                      sx={{ bgcolor: "#eef4ff", color: "#1E4CA1", fontWeight: 600, fontFamily: "'Montserrat', sans-serif" }}
+                      sx={{
+                        bgcolor: "#eef4ff",
+                        color: "#1E4CA1",
+                        fontWeight: 600,
+                        fontFamily: "'Montserrat', sans-serif",
+                      }}
                     />
                   </Box>
                 </Box>
 
-                {/* ---------- Replaced Card: use curriculum (mainHeadingsArr/mainHeadingsMap) ---------- */}
+                {/* ---------- Curriculum card ---------- */}
                 <Card sx={{ borderRadius: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
                   <Box
                     sx={{
@@ -484,7 +503,9 @@ export default function Couresview() {
                       fontFamily: "'Montserrat', sans-serif",
                     }}
                   >
-                    <Typography sx={{ fontWeight: 600, fontSize: 16, fontFamily: "'Montserrat', sans-serif" }}>Curriculum Preview</Typography>
+                    <Typography sx={{ fontWeight: 600, fontSize: 16, fontFamily: "'Montserrat', sans-serif" }}>
+                      Curriculum Preview
+                    </Typography>
 
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, fontFamily: "'Montserrat', sans-serif" }}>
                       <Typography variant="body2" color="text.secondary" sx={{ fontFamily: "'Montserrat', sans-serif" }}>
@@ -522,7 +543,8 @@ export default function Couresview() {
                                   alignItems: "center",
                                   py: 1.25,
                                   px: 2,
-                                  borderBottom: i < mainHeadingsArr.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none",
+                                  borderBottom:
+                                    i < mainHeadingsArr.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none",
                                   cursor: "pointer",
                                 }}
                                 role="button"
@@ -533,17 +555,36 @@ export default function Couresview() {
                                 }}
                               >
                                 <Box>
-                                  <Typography sx={{ fontWeight: 600, fontFamily: "'Montserrat', sans-serif" }}>{heading}</Typography>
-                                  <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "'Montserrat', sans-serif" }}>
+                                  <Typography sx={{ fontWeight: 600, fontFamily: "'Montserrat', sans-serif" }}>
+                                    {heading}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ fontFamily: "'Montserrat', sans-serif" }}
+                                  >
                                     {subs.length > 0 ? `${subs.length} topics` : "No topics"}
                                   </Typography>
                                 </Box>
 
-                                <Box sx={{ display: "flex", gap: 1, alignItems: "center", fontFamily: "'Montserrat', sans-serif" }}>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    gap: 1,
+                                    alignItems: "center",
+                                    fontFamily: "'Montserrat', sans-serif",
+                                  }}
+                                >
                                   <Chip
                                     label={`Section ${i + 1}`}
                                     size="small"
-                                    sx={{ bgcolor: "#e8f0ff", color: "#1E4CA1", fontWeight: 600, fontSize: 12, fontFamily: "'Montserrat', sans-serif" }}
+                                    sx={{
+                                      bgcolor: "#e8f0ff",
+                                      color: "#1E4CA1",
+                                      fontWeight: 600,
+                                      fontSize: 12,
+                                      fontFamily: "'Montserrat', sans-serif",
+                                    }}
                                   />
 
                                   <IconButton
@@ -561,7 +602,15 @@ export default function Couresview() {
 
                               <Collapse in={isOpen} timeout="auto" unmountOnExit>
                                 <Box sx={{ p: 2, bgcolor: "#fbfdff" }}>
-                                  <Typography sx={{ fontWeight: 600, mb: 1, fontFamily: "'Montserrat', sans-serif" }}>{heading} — Topics</Typography>
+                                  <Typography
+                                    sx={{
+                                      fontWeight: 600,
+                                      mb: 1,
+                                      fontFamily: "'Montserrat', sans-serif",
+                                    }}
+                                  >
+                                    {heading} — Topics
+                                  </Typography>
 
                                   {subs.length ? (
                                     <List dense>
@@ -591,7 +640,9 @@ export default function Couresview() {
                                         }}
                                       >
                                         <Box>
-                                          <Typography sx={{ fontWeight: 600, fontSize: 14 }}>No topics listed</Typography>
+                                          <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
+                                            No topics listed
+                                          </Typography>
                                         </Box>
                                       </Box>
                                     </Box>
@@ -603,7 +654,11 @@ export default function Couresview() {
                         })
                       ) : (
                         <Box sx={{ p: 2 }}>
-                          <Typography variant="body2" color="text.secondary" sx={{ fontFamily: "'Montserrat', sans-serif" }}>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ fontFamily: "'Montserrat', sans-serif" }}
+                          >
                             Curriculum not available.
                           </Typography>
                         </Box>
@@ -634,14 +689,15 @@ export default function Couresview() {
                   onClick={handleCardButtonClick}
                   aria-pressed={added}
                 >
-                  {/* show label based on state */}
                   {!added ? "Add to Cart" : drawerOpen ? "Hide" : `View (${cartItems.length})`}
                 </Button>
               </CardContent>
             </Card>
 
             <Card sx={{ p: 2, borderRadius: 2, boxShadow: 3 }}>
-              <Typography sx={{ fontWeight: 700, mb: 1, fontFamily: "'Montserrat', sans-serif" }}>Course Details</Typography>
+              <Typography sx={{ fontWeight: 700, mb: 1, fontFamily: "'Montserrat', sans-serif" }}>
+                Course Details
+              </Typography>
               <Typography variant="body2" sx={{ fontFamily: "'Montserrat', sans-serif" }}>
                 Duration: {mapped.courseDuration}
               </Typography>
@@ -669,7 +725,11 @@ export default function Couresview() {
 
           {cartItems.length === 0 ? (
             <Box sx={{ textAlign: "center", py: 6 }}>
-              <Typography variant="body1" color="text.secondary" sx={{ fontFamily: "'Montserrat', sans-serif" }}>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ fontFamily: "'Montserrat', sans-serif" }}
+              >
                 Your cart is empty.
               </Typography>
             </Box>
@@ -694,12 +754,26 @@ export default function Couresview() {
                     sx={{ width: 76, height: 56, bgcolor: "#fff", fontFamily: "'Montserrat', sans-serif" }}
                   />
                   <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontWeight: 500, fontFamily: "'Montserrat', sans-serif", fontSize: "13px" }}>{it.courseName}</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontFamily: "'Montserrat', sans-serif" }}>
+                    <Typography
+                      sx={{
+                        fontWeight: 500,
+                        fontFamily: "'Montserrat', sans-serif",
+                        fontSize: "13px",
+                      }}
+                    >
+                      {it.courseName}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", fontFamily: "'Montserrat', sans-serif" }}
+                    >
                       {it.courseDuration ? `${it.courseDuration} • ` : ""}
                       {it.courseCategory ?? ""}
                     </Typography>
-                    <Typography sx={{ mt: 0.5, fontFamily: "'Montserrat', sans-serif" }}>{formatPrice(it.coursePrice)}</Typography>
+                    <Typography sx={{ mt: 0.5, fontFamily: "'Montserrat', sans-serif" }}>
+                      {formatPrice(it.coursePrice)}
+                    </Typography>
                   </Box>
 
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -723,8 +797,14 @@ export default function Couresview() {
                   <Typography variant="subtitle2" sx={{ fontFamily: "'Montserrat', sans-serif" }}>
                     Total
                   </Typography>
-                  <Typography sx={{ fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>{totalPriceNumber ? `LKR ${totalPriceNumber}` : "—"}</Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "'Montserrat', sans-serif" }}>
+                  <Typography sx={{ fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>
+                    {totalPriceNumber ? `LKR ${totalPriceNumber}` : "—"}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontFamily: "'Montserrat', sans-serif" }}
+                  >
                     {cartItems.length} item{cartItems.length > 1 ? "s" : ""}
                   </Typography>
                 </Box>
@@ -733,8 +813,8 @@ export default function Couresview() {
                   <Button
                     variant="outlined"
                     onClick={() => {
-                      // clear cart
-                      writeCart([]);
+                      // ✅ CLEAR CART FOR ALL PAGES (localStorage)
+                      clearAllCartStorage();
                       setCartItems([]);
                       setAdded(false);
                       setDrawerOpen(false);

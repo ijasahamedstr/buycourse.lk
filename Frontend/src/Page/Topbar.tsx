@@ -24,6 +24,10 @@ const inquiryTypes = [
 
 const Montserrat = '"Montserrat", sans-serif';
 
+// cart keys used across the app
+const CART_KEY = "cartCourses";
+const OTT_CART_KEY = "ottCart";
+
 const Topbar: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -104,6 +108,24 @@ _Sent via buycourse.lk Inquiry Form_
     window.open(url, "_blank");
   };
 
+  const clearAllOrderLocalStorage = () => {
+    try {
+      // clear shared cart used by Couresview / PremiumaccountView
+      localStorage.removeItem(CART_KEY);
+      // clear any old OTT-specific cart if still used
+      localStorage.removeItem(OTT_CART_KEY);
+
+      // optional: let other parts of app react if you later hook into this
+      try {
+        window.dispatchEvent(new Event("cartCleared"));
+      } catch {
+        // ignore
+      }
+    } catch {
+      // ignore storage errors
+    }
+  };
+
   const handleSaveAndShare = async () => {
     if (!formData.name || !formData.mobile || !formData.type) {
       setSnackbar({
@@ -156,7 +178,11 @@ _Sent via buycourse.lk Inquiry Form_
       });
 
       setTimeout(() => {
+        // 1) open WhatsApp
         openWhatsApp();
+        // 2) CLEAR ALL ORDER / CART DATA FROM LOCALSTORAGE (ALL PAGES SHARE THIS)
+        clearAllOrderLocalStorage();
+        // 3) reset local form + close
         resetForm();
         handleClose();
       }, 300);

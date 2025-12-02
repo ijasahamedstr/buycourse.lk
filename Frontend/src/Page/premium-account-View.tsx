@@ -58,6 +58,7 @@ const formatLKR = (val: number | string | null | undefined) => {
 
 /* ---------- localStorage helpers (SAME CART as Couresview) ---------- */
 const CART_KEY = "cartCourses";
+const OTT_CART_KEY = "ottCart"; // extra key in case OTT uses its own storage anywhere
 
 type StoredCourse = {
   id: string;
@@ -84,6 +85,23 @@ const readCart = (): StoredCourse[] => {
 const writeCart = (items: StoredCourse[]) => {
   try {
     localStorage.setItem(CART_KEY, JSON.stringify(items));
+  } catch {
+    // ignore
+  }
+};
+
+/** Clear all cart-related localStorage (for ALL pages) */
+const clearAllCartStorage = () => {
+  try {
+    localStorage.removeItem(CART_KEY);
+    localStorage.removeItem(OTT_CART_KEY);
+
+    // Optional: notify other components (header, other pages) that cart is cleared
+    try {
+      window.dispatchEvent(new Event("cartCleared"));
+    } catch {
+      // ignore
+    }
   } catch {
     // ignore
   }
@@ -626,13 +644,13 @@ export default function PremiumaccountView() {
                       <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap", mb: 1 }}>
                         <Box>
                           <Typography sx={{ fontWeight: 700, fontSize: 18 }}>Plans</Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{fontFamily: "'Montserrat', sans-serif"}}>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontFamily: "'Montserrat', sans-serif" }}>
                             Choose a plan duration
                           </Typography>
                         </Box>
 
-                        <Box sx={{ ml: "auto", display: "flex", gap: 1, alignItems: "center",fontFamily: "'Montserrat', sans-serif" }}>
-                          <Typography sx={{ fontWeight: 800, fontSize: 18,fontFamily: "'Montserrat', sans-serif" }}>
+                        <Box sx={{ ml: "auto", display: "flex", gap: 1, alignItems: "center", fontFamily: "'Montserrat', sans-serif" }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: 18, fontFamily: "'Montserrat', sans-serif" }}>
                             {Number.isNaN(minPrice)
                               ? formatLKR(rawPrice)
                               : minPrice === maxPrice
@@ -736,14 +754,14 @@ export default function PremiumaccountView() {
                     }}
                   >
                     <MenuItem value="">
-                      <em style={{fontFamily: "'Montserrat', sans-serif"}}>Choose a plan</em>
+                      <em style={{ fontFamily: "'Montserrat', sans-serif" }}>Choose a plan</em>
                     </MenuItem>
                     {plans.map((p, idx) => (
                       <MenuItem
                         key={`${p.duration}-${idx}`}
                         value={idx}
                         disabled={p.stockStatus === "OutOfStock"}
-                        sx={{fontFamily: "'Montserrat', sans-serif"}}
+                        sx={{ fontFamily: "'Montserrat', sans-serif" }}
                       >
                         {p.duration} {p.price != null ? `- ${formatLKR(p.price)}` : ""}{" "}
                         {p.stockStatus === "OutOfStock" ? "(Out of stock)" : ""}
@@ -878,7 +896,8 @@ export default function PremiumaccountView() {
                   <Button
                     variant="outlined"
                     onClick={() => {
-                      writeCart([]);
+                      // ✅ CLEAR LOCAL STORAGE CART DATA FOR ALL PAGES
+                      clearAllCartStorage();
                       setCartItems([]);
                       setAdded(false);
                       setDrawerOpen(false);
