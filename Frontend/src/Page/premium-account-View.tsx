@@ -1,5 +1,5 @@
 // src/Page/Couresview.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation, Link as RouterLink } from "react-router-dom";
 import axios from "axios";
 import {

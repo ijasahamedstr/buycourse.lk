@@ -295,20 +295,6 @@ export default function Couresview() {
     }
   };
 
-  const removeCourseFromCart = (c: any) => {
-    try {
-      const cart = readCart();
-      const idToRemove = getCourseId(c);
-      const filtered = cart.filter((it) => it.id !== idToRemove);
-      writeCart(filtered);
-      setAdded(false);
-      setCartItems(filtered);
-      setSnack({ text: "Removed from cart", severity: "info" });
-    } catch {
-      setSnack({ text: "Could not remove from cart", severity: "error" });
-    }
-  };
-
   const removeItemById = (idToRemove: string) => {
     try {
       const cart = readCart();

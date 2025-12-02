@@ -159,7 +159,9 @@ export default function EtsyStyleHeader() {
   const [bottomNavValue, setBottomNavValue] = useState<string>("home");
 
   // Header cart shape: keep qty property for potential qty support
-  const [cartItems, setCartItems] = useState<Array<{ id: string; title: string; qty: number }>>([]);
+  const [cartItems, setCartItems] = useState<Array<{ id: string; title: string; qty: number }>>(
+    []
+  );
 
   const categories: { label: string; path: string }[] = [
     { label: "Tamil Courses", path: "/tamil-courses" },
@@ -244,7 +246,7 @@ export default function EtsyStyleHeader() {
 
   // listen for same-tab custom event and cross-tab storage changes
   useEffect(() => {
-    const onCartUpdated = (ev: Event) => {
+    const onCartUpdated = () => {
       const items = readCart();
       setCartItems(items.map((s) => ({ id: s.id, title: s.courseName || s.id, qty: 1 })));
     };
