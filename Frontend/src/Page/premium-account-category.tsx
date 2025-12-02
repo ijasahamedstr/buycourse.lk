@@ -89,10 +89,10 @@ export default function AllAccountsWithCategory() {
     paddingBottom: 0,
   };
 
-  const cardOuterStyle = (bgImage: string): React.CSSProperties => ({
-    flex: `0 0 320px`,
-    width: `320px`,
-    height: `160px`,
+  const cardOuterStyle: React.CSSProperties = {
+    flex: "0 0 320px",
+    width: "320px",
+    height: "160px",
     borderRadius: 14,
     background: "#f4f7fb",
     boxShadow: "0 8px 22px rgba(13, 26, 41, 0.06)",
@@ -102,7 +102,7 @@ export default function AllAccountsWithCategory() {
     gap: 12,
     position: "relative",
     overflow: "hidden",
-  });
+  };
 
   const leftContentStyle: React.CSSProperties = {
     display: "flex",
@@ -167,11 +167,6 @@ export default function AllAccountsWithCategory() {
     objectFit: "cover",
   };
 
-  const arrowStyle: React.CSSProperties = {
-    fontSize: 14,
-    display: "inline-block",
-  };
-
   // navigation handler
   const onServiceView = (svc: Service) => {
     if (!svc?.id) return;
@@ -180,14 +175,46 @@ export default function AllAccountsWithCategory() {
 
   // static cards
   const cards: Card[] = [
-    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/netflix.jpg.webp", title: "Digital Keys", desc: "License keys & top-ups" },
-    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/primevideo.png.webp", title: "Games", desc: "Top game codes & bundles" },
-    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/45cc6c91692a3665d97b570a3272132a.jpg", title: "OTT", desc: "Streaming services" },
-    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/YouTube-Premium-512x512-1.png.webp", title: "Premium", desc: "Premium plans & upgrades" },
-    { image: "https://via.placeholder.com/497x225.png?text=streaming-combos", title: "Streaming Combos", desc: "Combo subscriptions" },
-    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/altbalaji.png.webp", title: "Utilities", desc: "Useful tools & apps" },
-    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-33.png", title: "VPN", desc: "Secure VPN plans" },
-    { image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-33.png", title: "AI", desc: "AI" },
+    {
+      image: "https://shopallpremium.com/wp-content/uploads/2022/02/netflix.jpg.webp",
+      title: "Digital Keys",
+      desc: "License keys & top-ups",
+    },
+    {
+      image: "https://shopallpremium.com/wp-content/uploads/2022/02/primevideo.png.webp",
+      title: "Games",
+      desc: "Top game codes & bundles",
+    },
+    {
+      image: "https://shopallpremium.com/wp-content/uploads/2022/02/45cc6c91692a3665d97b570a3272132a.jpg",
+      title: "OTT",
+      desc: "Streaming services",
+    },
+    {
+      image: "https://shopallpremium.com/wp-content/uploads/2022/02/YouTube-Premium-512x512-1.png.webp",
+      title: "Premium",
+      desc: "Premium plans & upgrades",
+    },
+    {
+      image: "https://via.placeholder.com/497x225.png?text=streaming-combos",
+      title: "Streaming Combos",
+      desc: "Combo subscriptions",
+    },
+    {
+      image: "https://shopallpremium.com/wp-content/uploads/2022/02/altbalaji.png.webp",
+      title: "Utilities",
+      desc: "Useful tools & apps",
+    },
+    {
+      image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-33.png",
+      title: "VPN",
+      desc: "Secure VPN plans",
+    },
+    {
+      image: "https://shopallpremium.com/wp-content/uploads/2022/02/unnamed-33.png",
+      title: "AI",
+      desc: "AI",
+    },
   ];
 
   // data fetching
@@ -264,7 +291,10 @@ export default function AllAccountsWithCategory() {
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
-  const paginated = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const paginated = filteredData.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   useEffect(() => {
     setCurrentPage(1);
@@ -273,7 +303,9 @@ export default function AllAccountsWithCategory() {
   const goToPage = (p: number) => {
     if (p < 1 || p > totalPages) return;
     setCurrentPage(p);
-    document.querySelector(".all-accounts")?.scrollIntoView({ behavior: "smooth" });
+    document
+      .querySelector(".all-accounts")
+      ?.scrollIntoView({ behavior: "smooth" });
   };
 
   const onCardView = (card: Card) => {
@@ -315,10 +347,12 @@ export default function AllAccountsWithCategory() {
               }}
               style={{ textDecoration: "none" }}
             >
-              <div style={cardOuterStyle(card.image)}>
+              <div style={cardOuterStyle}>
                 <div style={leftContentStyle}>
                   <div>
-                    {card.title && <div style={pillTitleStyle}>{card.title}</div>}
+                    {card.title && (
+                      <div style={pillTitleStyle}>{card.title}</div>
+                    )}
                     {card.desc && <div style={descStyle}>{card.desc}</div>}
                   </div>
 
@@ -333,7 +367,7 @@ export default function AllAccountsWithCategory() {
                       onCardView(card);
                     }}
                   >
-                    View → 
+                    View →
                   </button>
                 </div>
 
@@ -342,7 +376,10 @@ export default function AllAccountsWithCategory() {
                     src={card.original ?? card.image ?? placeholderImage}
                     alt={card.title}
                     style={thumbImgStyle}
-                    onError={(e) => ((e.currentTarget as HTMLImageElement).src = placeholderImage)}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src =
+                        placeholderImage;
+                    }}
                   />
                 </div>
               </div>
@@ -352,7 +389,14 @@ export default function AllAccountsWithCategory() {
       </div>
 
       {/* category chips */}
-      <div style={{ padding: "20px 8%", display: "flex", gap: 12, flexWrap: "wrap" }}>
+      <div
+        style={{
+          padding: "20px 8%",
+          display: "flex",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
         <strong>Categories:</strong>
 
         <button
@@ -394,13 +438,24 @@ export default function AllAccountsWithCategory() {
 
         <div className="all-accounts__grid">
           {paginated.map((s) => (
-            <Link key={s.id} to={`/service/${encodeURIComponent(s.id)}`} style={{ textDecoration: "none" }}>
+            <Link
+              key={s.id}
+              to={`/service/${encodeURIComponent(s.id)}`}
+              style={{ textDecoration: "none" }}
+            >
               <div className="account-card">
-                <div className="account-card__img" style={{ backgroundImage: `url(${s.image})` }} />
+                <div
+                  className="account-card__img"
+                  style={{ backgroundImage: `url(${s.image})` }}
+                />
                 <div className="account-card__meta">
                   <h4>{s.title}</h4>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700 }}>{formatPrice(s.originalPrice)}</div>
+                    <div
+                      style={{ fontSize: 14, fontWeight: 700 }}
+                    >
+                      {formatPrice(s.originalPrice)}
+                    </div>
                   </div>
 
                   <button
@@ -428,23 +483,35 @@ export default function AllAccountsWithCategory() {
           ))}
 
           {!loading && filteredData.length === 0 && (
-            <div style={{ padding: 24, color: "#666" }}>No services found.</div>
+            <div style={{ padding: 24, color: "#666" }}>
+              No services found.
+            </div>
           )}
         </div>
 
         {/* pagination */}
         <div className="all-accounts__pagination">
-          <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
             Prev
           </button>
 
           {Array.from({ length: totalPages }).map((_, i) => (
-            <button key={i} onClick={() => goToPage(i + 1)} className={currentPage === i + 1 ? "active" : ""}>
+            <button
+              key={i}
+              onClick={() => goToPage(i + 1)}
+              className={currentPage === i + 1 ? "active" : ""}
+            >
               {i + 1}
             </button>
           ))}
 
-          <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}>
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
             Next
           </button>
         </div>
