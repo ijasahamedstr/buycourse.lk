@@ -1,4 +1,4 @@
-// src/Page/Couresview.tsx
+// src/Page/premium-account-View.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation, Link as RouterLink } from "react-router-dom";
 import axios from "axios";
@@ -22,9 +22,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Avatar,
+  Stack,
 } from "@mui/material";
 
-/* -------------------- Helpers -------------------- */
+/* -------------------- Shared Helpers (same style as Couresview) -------------------- */
 const normalizeText = (s = "") =>
   s
     .toString()
@@ -47,26 +49,51 @@ const formatPrice = (price: any) => {
   return str.toUpperCase().startsWith("LKR") ? str : `LKR ${str}`;
 };
 
-// Lightweight LKR formatter
 const formatLKR = (val: number | string | null | undefined) => {
-  if (val === null || val === undefined || (typeof val === "number" && Number.isNaN(val)))
-    return "LKR —";
+  if (val === null || val === undefined || (typeof val === "number" && Number.isNaN(val))) return "LKR —";
   if (typeof val === "number") return `LKR ${val.toLocaleString()}`;
   const str = String(val).trim();
   return str.toUpperCase().startsWith("LKR") ? str : `LKR ${str}`;
 };
 
-// Simple date formatter for WhatsApp order meta
-const formatDate = (date: number | string | Date) => {
-  const d = new Date(date);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString("en-LK", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+/* ---------- localStorage helpers (SAME CART as Couresview) ---------- */
+const CART_KEY = "cartCourses";
+
+type StoredCourse = {
+  id: string;
+  courseName: string;
+  coursePrice?: any;
+  courseImage?: string;
+  courseDuration?: string;
+  courseCategory?: string;
+  addedAt?: number;
+};
+
+const readCart = (): StoredCourse[] => {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed;
+  } catch {
+    return [];
+  }
+};
+
+const writeCart = (items: StoredCourse[]) => {
+  try {
+    localStorage.setItem(CART_KEY, JSON.stringify(items));
+  } catch {
+    // ignore
+  }
+};
+
+/* ---------- date util (same idea as Couresview) ---------- */
+const formatDate = (ts?: number) => {
+  if (!ts) return "N/A";
+  const d = new Date(ts);
+  return d.toLocaleString(); // en-LK or browser locale
 };
 
 /* -------------------- Types -------------------- */
@@ -76,32 +103,15 @@ type PlanItem = {
   stockStatus: "InStock" | "OutOfStock";
 };
 
-type CartItem = {
-  courseId: string;
-  name: string;
-  duration: string;
-  price: number | null;
-  image: string;
-  quantity: number;
-};
-
-const CART_STORAGE_KEY = "ottCart";
-const DEFAULT_THUMB =
-  "https://img.freepik.com/premium-vector/no-photo-available-vector-icon-default-image-symbol-picture-coming-soon-web-site-mobile-app_87543-18055.jpg";
-
-// WhatsApp number (change if needed)
-const WA_NUMBER = "94767080553";
-
-/* -------------------- Normalize plans from OTT schema -------------------- */
+/* -------------------- Normalize plans from Ottservice schema -------------------- */
 const normalizePlans = (course: any): PlanItem[] => {
   const plans: PlanItem[] = [];
-  const rootStock: "InStock" | "OutOfStock" =
-    course?.stock === "OutOfStock" ? "OutOfStock" : "InStock";
+  const rootStock: "InStock" | "OutOfStock" = course?.stock === "OutOfStock" ? "OutOfStock" : "InStock";
 
   const pd = course?.planDurations;
   const mh = course?.mainHeadings;
 
-  // Build a duration -> price map from mainHeadings (for fallback)
+  // duration -> price map from mainHeadings
   const priceMap = new Map<string, number>();
   if (Array.isArray(mh)) {
     mh.forEach((h: any) => {
@@ -112,26 +122,19 @@ const normalizePlans = (course: any): PlanItem[] => {
 
       const prices = h?.Price;
       let firstPrice: any = null;
-      if (Array.isArray(prices) && prices.length > 0) {
-        firstPrice = prices[0];
-      } else if (prices != null) {
-        firstPrice = prices;
-      }
+      if (Array.isArray(prices) && prices.length > 0) firstPrice = prices[0];
+      else if (prices != null) firstPrice = prices;
       if (firstPrice == null) return;
 
       const n = Number(firstPrice);
-      if (!Number.isNaN(n)) {
-        priceMap.set(duration, n);
-      }
+      if (!Number.isNaN(n)) priceMap.set(duration, n);
     });
   }
 
-  // Prefer planDurations if present
   if (Array.isArray(pd) && pd.length > 0) {
     pd.forEach((item: any) => {
       if (!item) return;
 
-      // New structure: object
       if (typeof item === "object") {
         const durationRaw = item.duration ?? item.planDurations;
         const duration = durationRaw ? String(durationRaw).trim() : "";
@@ -144,14 +147,11 @@ const normalizePlans = (course: any): PlanItem[] => {
           price = priceMap.get(duration)!;
         }
 
-        const stockStatus: "InStock" | "OutOfStock" =
-          item.stockStatus === "OutOfStock" ? "OutOfStock" : rootStock;
-
+        const stockStatus: "InStock" | "OutOfStock" = item.stockStatus === "OutOfStock" ? "OutOfStock" : rootStock;
         plans.push({ duration, price, stockStatus });
         return;
       }
 
-      // Very old structure: string only
       if (typeof item === "string") {
         const duration = item.trim();
         if (!duration) return;
@@ -160,7 +160,6 @@ const normalizePlans = (course: any): PlanItem[] => {
       }
     });
   } else if (priceMap.size > 0) {
-    // No planDurations, but we have mainHeadings — build purely from that
     priceMap.forEach((price, duration) => {
       plans.push({ duration, price, stockStatus: rootStock });
     });
@@ -178,26 +177,28 @@ export default function PremiumaccountView() {
   const [loading, setLoading] = useState(true);
   const [course, setCourse] = useState<any | null>(null);
 
-  // curriculum state setters (values unused, kept for future)
+  // curriculum state (not rendered yet, kept for future)
   const [, setMainHeadingsArr] = useState<string[]>([]);
   const [, setMainHeadingsMap] = useState<Record<string, string[]>>({});
 
-  const [snack, setSnack] = useState<string | null>(null);
+  // Snackbar now matches Couresview style: text + severity
+  const [snack, setSnack] = useState<{ text: string; severity: "success" | "error" | "info" } | null>(null);
 
-  // Cart & plan selection
-  // "" = nothing selected yet, number = index in plans[]
+  // Cart + drawer state (SAME semantics as Couresview)
+  const [added, setAdded] = useState(false); // whether current OTT item is in cart
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [cartItems, setCartItems] = useState<StoredCourse[]>([]);
+
+  // Plan selection ("" = none)
   const [selectedPlanIndex, setSelectedPlanIndex] = useState<number | "">("");
-  const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const queryId = query.get("id") ?? undefined;
   const querySlug = query.get("slug") ?? undefined;
 
-  // Font applied inside component root
   const font = "'Montserrat', sans-serif";
 
-  /* ---------- curriculum parser ---------- */
+  /* ---------- curriculum parser (same logic) ---------- */
   const parseCurriculum = (incoming: any) => {
     const arr: string[] = [];
     const map: Record<string, string[]> = {};
@@ -233,7 +234,7 @@ export default function PremiumaccountView() {
     setMainHeadingsMap(map);
   };
 
-  /* ---------- fetch course ---------- */
+  /* ---------- fetch Ottservice course ---------- */
   useEffect(() => {
     let cancelled = false;
 
@@ -249,10 +250,9 @@ export default function PremiumaccountView() {
         if (wantedId) {
           try {
             const res = await axios.get(`${apiBase}/Ottservice/${wantedId}`);
-            // depending on your API shape:
             found = res.data?.data ?? res.data ?? null;
-          } catch (e) {
-            // ignore and continue to slug search
+          } catch {
+            // ignore and try slug
           }
         }
 
@@ -280,7 +280,7 @@ export default function PremiumaccountView() {
 
         if (!found) {
           if (!cancelled) {
-            setSnack("Course not found");
+            setSnack({ text: "Course not found", severity: "error" });
             navigate(-1);
           }
           return;
@@ -292,7 +292,7 @@ export default function PremiumaccountView() {
         }
       } catch (err) {
         console.error(err);
-        if (!cancelled) setSnack("Error loading course.");
+        if (!cancelled) setSnack({ text: "Error loading course.", severity: "error" });
       }
 
       if (!cancelled) setLoading(false);
@@ -304,33 +304,45 @@ export default function PremiumaccountView() {
     };
   }, [slug, id, queryId, querySlug, navigate]);
 
-  /* ---------- load OTT cart from localStorage on mount ---------- */
+  /* ---------- init cart from localStorage (shared cart) ---------- */
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(CART_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        setCartItems(parsed);
-      }
-    } catch (e) {
-      console.error("Failed to read cart from localStorage", e);
-    }
+    setCartItems(readCart());
   }, []);
 
-  const syncCart = (items: CartItem[]) => {
-    setCartItems(items);
-    try {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-    } catch (e) {
-      console.error("Failed to save cart to localStorage", e);
-    }
-  };
+  /* ---------- sync `added` state when course changes ---------- */
+  useEffect(() => {
+    if (!course) return;
+    const cart = readCart();
+    const baseId = String(course._id ?? course.id ?? course.ottServiceName ?? "");
+    const exists = cart.some((c) => {
+      // treat any item whose id starts with this baseId as "added"
+      return typeof c.id === "string" && c.id.startsWith(baseId);
+    });
+    setAdded(exists);
+  }, [course]);
 
-  /* ---------- UI states ---------- */
+  /* ---------- listen for cross-tab & other updates on CART_KEY ---------- */
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === CART_KEY) {
+        const latest = readCart();
+        setCartItems(latest);
+
+        if (course) {
+          const baseId = String(course._id ?? course.id ?? course.ottServiceName ?? "");
+          const exists = latest.some((c) => typeof c.id === "string" && c.id.startsWith(baseId));
+          setAdded(exists);
+        }
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [course]);
+
+  /* ---------- map fields (like before) ---------- */
   if (loading)
     return (
-      <Box sx={{ textAlign: "center", py: 10 }}>
+      <Box sx={{ textAlign: "center", py: 10, fontFamily: font }}>
         <CircularProgress />
         <Typography sx={{ mt: 2 }}>Loading Course…</Typography>
       </Box>
@@ -338,7 +350,7 @@ export default function PremiumaccountView() {
 
   if (!course)
     return (
-      <Box sx={{ textAlign: "center", py: 10 }}>
+      <Box sx={{ textAlign: "center", py: 10, fontFamily: font }}>
         <Typography variant="h6">Course not found</Typography>
         <Button sx={{ mt: 2 }} variant="outlined" onClick={() => navigate(-1)}>
           Go Back
@@ -346,7 +358,6 @@ export default function PremiumaccountView() {
       </Box>
     );
 
-  /* ---------- map fields (supporting both legacy + new Ottservice fields) ---------- */
   const mapped = {
     courseName: course.ottServiceName ?? course.courseName ?? course.title ?? "Course",
     courseDescription: course.description ?? course.courseDescription ?? "",
@@ -365,7 +376,7 @@ export default function PremiumaccountView() {
       if (!imgs) return "";
       if (Array.isArray(imgs)) return imgs[0] ?? "";
       if (typeof imgs === "string") return imgs;
-      if (typeof imgs === "object" && imgs?.url) return imgs.url;
+      if (typeof imgs === "object" && (imgs as any)?.url) return (imgs as any).url;
       return "";
     })(),
 
@@ -386,7 +397,6 @@ export default function PremiumaccountView() {
     videoQuality: course.videoQuality ?? "Standard",
   };
 
-  // Destructure mapped values for cleaner JSX
   const {
     courseName,
     courseDescription,
@@ -397,10 +407,8 @@ export default function PremiumaccountView() {
     coursePrice,
   } = mapped;
 
-  // ---- Normalized plans (from planDurations/mainHeadings) ----
   const plans: PlanItem[] = normalizePlans(course);
 
-  // Compute min/max price for display
   const priceValues = plans
     .map((p) => (p.price != null && !Number.isNaN(p.price) ? p.price : null))
     .filter((v): v is number => v !== null);
@@ -409,7 +417,6 @@ export default function PremiumaccountView() {
   const maxPrice = priceValues.length ? Math.max(...priceValues) : NaN;
 
   const selectedPlan = selectedPlanIndex === "" ? null : plans[selectedPlanIndex as number];
-
   const selectedStock: "InStock" | "OutOfStock" =
     selectedPlan?.stockStatus ?? (course.stock === "OutOfStock" ? "OutOfStock" : "InStock");
 
@@ -421,124 +428,129 @@ export default function PremiumaccountView() {
     ? formatLKR(minPrice)
     : `${formatLKR(minPrice)} - ${formatLKR(maxPrice)}`;
 
-  const handleAddToCart = () => {
+  /* ---------- map OTT course + plan to StoredCourse (shared cart shape) ---------- */
+  const getOttBaseId = (c: any) =>
+    String(c._id ?? c.id ?? c.ottServiceName ?? c.courseName ?? "");
+
+  const mapOttToStored = (c: any, plan: PlanItem | null): StoredCourse => {
+    const baseId = getOttBaseId(c);
+    // Make id unique per duration so user can add multiple durations if needed
+    const id = plan ? `${baseId}-${plan.duration}` : baseId;
+
+    return {
+      id,
+      courseName: courseName,
+      coursePrice: plan?.price ?? coursePrice,
+      courseImage: courseImage,
+      courseDuration: plan?.duration ?? "",
+      courseCategory: courseCategory,
+      addedAt: Date.now(),
+    };
+  };
+
+  /* ---------- cart operations (same style as Couresview) ---------- */
+  const addOttItemToCart = () => {
     if (!selectedPlan) {
-      setSnack("Please select a plan before adding to cart.");
+      setSnack({ text: "Please select a plan before adding to cart.", severity: "info" });
       return;
     }
     if (selectedPlan.stockStatus === "OutOfStock") {
-      setSnack("Selected plan is out of stock.");
+      setSnack({ text: "Selected plan is out of stock.", severity: "error" });
       return;
     }
 
-    const courseId = (course._id ?? course.id ?? "").toString();
-    if (!courseId) {
-      setSnack("Cannot add this item to cart (no ID).");
-      return;
-    }
+    const itemStored = mapOttToStored(course, selectedPlan);
+    const cart = readCart();
+    const exists = cart.some((it) => it.id === itemStored.id);
 
-    const newItem: CartItem = {
-      courseId,
-      name: courseName,
-      duration: selectedPlan.duration,
-      price: selectedPlan.price,
-      image: courseImage,
-      quantity: 1,
-    };
-
-    const existingIndex = cartItems.findIndex(
-      (item) => item.courseId === newItem.courseId && item.duration === newItem.duration
-    );
-
-    let newCart: CartItem[];
-    if (existingIndex >= 0) {
-      newCart = [...cartItems];
-      newCart[existingIndex] = {
-        ...newCart[existingIndex],
-        quantity: newCart[existingIndex].quantity + 1,
-      };
+    if (!exists) {
+      const updated = [...cart, itemStored];
+      writeCart(updated);
+      setCartItems(updated);
+      setAdded(true);
+      setSnack({ text: "Added to cart", severity: "success" });
     } else {
-      newCart = [...cartItems, newItem];
+      setSnack({ text: "This plan is already in your cart", severity: "info" });
     }
+  };
 
-    // 1) Update local OTT cart + open local drawer
-    syncCart(newCart);
-    setCartDrawerOpen(true);
-
-    // 2) ALSO add to global header cart so header drawer sees it
+  const removeItemById = (idToRemove: string) => {
     try {
-      const headerAddToCart = (window as any).__BUYCOURSE_ADD_TO_CART;
-      if (typeof headerAddToCart === "function") {
-        // Make id unique per course+plan so different durations don't clash
-        const headerId = `${courseId}-${selectedPlan.duration}`;
-        headerAddToCart({
-          id: headerId,
-          title: courseName,
-          coursePrice: selectedPlan.price,
-          courseImage,
-          courseDuration: selectedPlan.duration,
-          courseCategory,
-        });
-      }
-    } catch (e) {
-      console.error("Failed to sync OTT cart item to header cart", e);
+      const cart = readCart();
+      const filtered = cart.filter((it) => it.id !== idToRemove);
+      writeCart(filtered);
+      setCartItems(filtered);
+
+      const baseId = getOttBaseId(course);
+      const stillExists = filtered.some((c) => typeof c.id === "string" && c.id.startsWith(baseId));
+      setAdded(stillExists);
+
+      setSnack({ text: "Removed from cart", severity: "info" });
+    } catch {
+      setSnack({ text: "Could not remove item", severity: "error" });
     }
   };
 
-  const handleRemoveFromCart = (index: number) => {
-    const updated = cartItems.filter((_, i) => i !== index);
-    syncCart(updated);
+  const handleCardButtonClick = () => {
+    if (!added) {
+      // Behave like Couresview: first click adds + opens drawer
+      addOttItemToCart();
+      setDrawerOpen(true);
+    } else {
+      // Already added: toggle View / Hide
+      setDrawerOpen((s) => !s);
+    }
   };
 
-  const handleClearCart = () => {
-    syncCart([]);
-  };
+  /* ---------- total + WhatsApp (same style as Couresview) ---------- */
+  const totalPriceNumber = cartItems.reduce((sum, it) => {
+    const raw = it.coursePrice;
+    if (raw == null) return sum;
+    const digits = String(raw).replace(/[^\d.]/g, "");
+    const n = Number(digits);
+    return Number.isFinite(n) ? sum + n : sum;
+  }, 0);
 
-  const cartTotal = cartItems.reduce(
-    (sum, item) => sum + (item.price ?? 0) * item.quantity,
-    0
-  );
+  const WA_NUMBER = "94767080553";
 
-  /* ---------- WhatsApp checkout (rich message) ---------- */
-  const handleWhatsApp = () => {
-    if (!cartItems.length) return;
-
+  const openWhatsApp = () => {
     const orderNumber = `ORD-${Date.now()}`;
     const orderDate = formatDate(Date.now());
 
-    let message = `*New OTP Order*\n\n`;
-    message += `*Order Number:* ${orderNumber}\n`;
-    message += `*Order Date:* ${orderDate}\n`;
-    message += `*Items:* ${cartItems.length}\n\n`;
+    let message = `*New Course Order*%0A%0A`;
+    message += `*Order Number:* ${orderNumber}%0A`;
+    message += `*Order Date:* ${orderDate}%0A`;
+    message += `*Items:* ${cartItems.length}%0A%0A`;
 
     cartItems.forEach((it, idx) => {
-      const qty = it.quantity || 1;
-      const unitPrice = it.price ?? 0;
-      const lineTotal = unitPrice * qty;
+      const name = it.courseName || "N/A";
+      const price = formatPrice(it.coursePrice);
+      const category = it.courseCategory || "N/A";
+      const duration = it.courseDuration || "N/A";
+      const addedAt = it.addedAt ? formatDate(it.addedAt) : "N/A";
 
-      message += `*${idx + 1}. ${it.name}*\n`;
-      message += `Duration: ${it.duration || "N/A"}\n`;
-      message += `Qty: ${qty}\n`;
-      message += `Price: ${formatLKR(unitPrice)}\n`;
-      message += `Line Total: ${formatLKR(lineTotal)}\n\n`;
+      message += `*${idx + 1}. ${name}*%0A`;
+      message += `Price: ${price}%0A`;
+      message += `Category: ${category}%0A`;
+      message += `Duration: ${duration}%0A`;
+      message += `Added: ${addedAt}%0A%0A`;
     });
 
-    message += `*Total Items:* ${cartItems.length}\n`;
-    message += `*Total Price:* ${formatLKR(cartTotal)}\n\n`;
+    message += `*Total Items:* ${cartItems.length}%0A`;
+    message += `*Total Price:* ${totalPriceNumber ? `LKR ${totalPriceNumber}` : "—"}%0A%0A`;
     message += `_Sent via buycourse.lk WhatsApp Checkout_`;
 
-    const url = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(message)}`;
-    if (typeof window !== "undefined") {
-      window.open(url, "_blank");
-    }
+    const url = `https://wa.me/${WA_NUMBER}?text=${message}`;
+    window.open(url, "_blank");
   };
 
+  /* -------------------- UI -------------------- */
   return (
     <Box
       sx={{
         bgcolor: "#fff",
         fontFamily: font,
-        "& *": { fontFamily: font },
+        "& *": { fontFamily: `${font} !important` },
       }}
     >
       <Snackbar
@@ -547,11 +559,12 @@ export default function PremiumaccountView() {
         onClose={() => setSnack(null)}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert severity="error" onClose={() => setSnack(null)}>
-          {snack}
+        <Alert onClose={() => setSnack(null)} severity={snack?.severity ?? "info"}>
+          {snack?.text}
         </Alert>
       </Snackbar>
 
+      {/* Breadcrumbs */}
       <Box sx={{ bgcolor: "#f3f6fb", py: 2, mt: 2 }}>
         <Box sx={{ maxWidth: 1200, mx: "auto", px: 2 }}>
           <Breadcrumbs separator="›">
@@ -561,188 +574,99 @@ export default function PremiumaccountView() {
             <MUILink component={RouterLink} to="/programmes" underline="hover">
               Programs
             </MUILink>
-            <Typography
-              color="text.primary"
-              sx={{ fontFamily: "'Montserrat', sans-serif" }}
-            >
-              {courseName}
-            </Typography>
+            <Typography color="text.primary">{courseName}</Typography>
           </Breadcrumbs>
         </Box>
       </Box>
 
       <Box sx={{ maxWidth: 1200, mx: "auto", px: 2, py: 2 }}>
-        {/* NOTE: row-reverse so right content appears on the left on md+ */}
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", md: "row-reverse" },
-            gap: 3,
-          }}
-        >
+        {/* Row reverse to keep your previous layout */}
+        <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row-reverse" }, gap: 3 }}>
+          {/* LEFT SIDE: content / details */}
           <Box sx={{ flex: 1 }}>
             <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
               <CardContent>
-                <Typography
-                  variant="h5"
-                  sx={{
-                    fontWeight: 800,
-                    fontFamily: "'Montserrat', sans-serif",
-                  }}
-                >
+                <Typography variant="h5" sx={{ fontWeight: 800 }}>
                   {courseName}
                 </Typography>
-                <Box
-                  sx={{
-                    display: "flex",
-                    gap: 2,
-                    alignItems: "center",
-                    mb: 2,
-                    flexWrap: "wrap",
-                    fontFamily: font,
-                  }}
-                >
-                  {/* Static rating placeholder */}
+
+                <Box sx={{ display: "flex", gap: 2, alignItems: "center", mb: 2, flexWrap: "wrap" }}>
                   <Rating value={4.6} precision={0.1} readOnly size="small" />
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ fontFamily: font }}
-                  >
+                  <Typography variant="body2" color="text.secondary">
                     4.6 (2,315 ratings)
                   </Typography>
                 </Box>
 
                 <Divider sx={{ my: 2 }} />
 
-                <Typography
-                  sx={{
-                    mb: 2,
-                    fontFamily: "'Montserrat', sans-serif",
-                  }}
-                >
-                  {courseDescription}
-                </Typography>
+                <Typography sx={{ mb: 2 }}>{courseDescription}</Typography>
 
                 <Divider sx={{ my: 2 }} />
 
                 <Box sx={{ mb: 1 }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 2,
-                      mb: 0.5,
-                    }}
-                  >
-                    <Chip
-                      label={courseCategory}
-                      size="small"
-                      sx={{
-                        bgcolor: "#eef4ff",
-                        color: "#1E4CA1",
-                        fontWeight: 600,
-                        fontFamily: "'Montserrat', sans-serif",
-                      }}
-                    />
-                  </Box>
+                  <Chip
+                    label={courseCategory}
+                    size="small"
+                    sx={{ bgcolor: "#eef4ff", color: "#1E4CA1", fontWeight: 600 }}
+                  />
                 </Box>
 
-                {/* ---------- Details Card (Plans + Access) ---------- */}
+                {/* Details card: plans + access */}
                 <Card sx={{ borderRadius: 2, boxShadow: 3, mt: 2 }}>
-                  <CardContent sx={{ fontFamily: font }}>
+                  <CardContent>
                     {/* Plans card */}
                     <Card
                       sx={{
                         borderRadius: 2,
                         boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                         overflow: "hidden",
-                        fontFamily: font,
                         p: 2,
                       }}
                     >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          gap: 2,
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                          mb: 1,
-                        }}
-                      >
+                      <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap", mb: 1 }}>
                         <Box>
-                          <Typography
-                            sx={{
-                              fontWeight: 700,
-                              fontSize: 18,
-                              fontFamily: font,
-                            }}
-                          >
-                            Plans
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ fontFamily: font }}
-                          >
+                          <Typography sx={{ fontWeight: 700, fontSize: 18 }}>Plans</Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{fontFamily: "'Montserrat', sans-serif"}}>
                             Choose a plan duration
                           </Typography>
                         </Box>
 
-                        <Box
-                          sx={{
-                            ml: "auto",
-                            display: "flex",
-                            gap: 1,
-                            alignItems: "center",
-                          }}
-                        >
-                          <Typography
-                            sx={{
-                              fontWeight: 800,
-                              fontSize: 18,
-                              fontFamily: font,
-                            }}
-                          >
+                        <Box sx={{ ml: "auto", display: "flex", gap: 1, alignItems: "center",fontFamily: "'Montserrat', sans-serif" }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: 18,fontFamily: "'Montserrat', sans-serif" }}>
                             {Number.isNaN(minPrice)
                               ? formatLKR(rawPrice)
                               : minPrice === maxPrice
                               ? formatLKR(minPrice)
-                              : `${formatLKR(
-                                  minPrice
-                                )} - ${formatLKR(maxPrice)}`}
+                              : `${formatLKR(minPrice)} - ${formatLKR(maxPrice)}`}
                           </Typography>
                         </Box>
                       </Box>
 
                       <Divider sx={{ my: 1 }} />
 
-                      <Box
-                        sx={{
-                          display: "flex",
-                          gap: 1,
-                          flexWrap: "wrap",
-                          mb: 1,
-                        }}
-                      >
+                      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}>
                         {plans.length ? (
-                          plans.map((p, idx) => (
-                            <Chip
-                              key={`${p.duration}-${idx}`}
-                              label={
-                                p.price != null
-                                  ? `${p.duration} • ${formatLKR(p.price)}`
-                                  : p.duration
-                              }
-                              variant="outlined"
-                              sx={{ fontFamily: font }}
-                            />
-                          ))
+                          plans.map((p, idx) => {
+                            const isSelected = selectedPlanIndex === idx;
+                            return (
+                              <Chip
+                                key={`${p.duration}-${idx}`}
+                                label={
+                                  p.price != null
+                                    ? `${p.duration} • ${formatLKR(p.price)}`
+                                    : p.duration
+                                }
+                                variant={isSelected ? "filled" : "outlined"}
+                                color={isSelected ? "primary" : "default"}
+                                onClick={() =>
+                                  setSelectedPlanIndex(selectedPlanIndex === idx ? "" : idx)
+                                }
+                                disabled={p.stockStatus === "OutOfStock"}
+                              />
+                            );
+                          })
                         ) : (
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                          >
+                          <Typography variant="body2" color="text.secondary">
                             No plan durations available.
                           </Typography>
                         )}
@@ -755,75 +679,28 @@ export default function PremiumaccountView() {
                         borderRadius: 2,
                         boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                         overflow: "hidden",
-                        fontFamily: font,
                         p: 2,
                         mt: 2,
                       }}
                     >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          gap: 2,
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                          mb: 1,
-                        }}
-                      >
+                      <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap", mb: 1 }}>
                         <Box>
-                          <Typography
-                            sx={{
-                              fontWeight: 700,
-                              fontSize: 18,
-                              fontFamily: font,
-                            }}
-                          >
-                            Access
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ fontFamily: font }}
-                          >
+                          <Typography sx={{ fontWeight: 700, fontSize: 18 }}>Access</Typography>
+                          <Typography variant="body2" color="text.secondary">
                             Choose an access level
                           </Typography>
                         </Box>
-
-                        <Box
-                          sx={{
-                            ml: "auto",
-                            display: "flex",
-                            gap: 1,
-                            alignItems: "center",
-                          }}
-                        />
                       </Box>
 
                       <Divider sx={{ my: 2 }} />
 
-                      <Box
-                        sx={{
-                          display: "flex",
-                          gap: 1,
-                          flexWrap: "wrap",
-                          mb: 1,
-                        }}
-                      >
+                      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}>
                         {(accessLicenseTypes ?? []).length ? (
-                          (accessLicenseTypes ?? []).map(
-                            (t: string, i: number) => (
-                              <Chip
-                                key={i}
-                                label={t}
-                                size="small"
-                                sx={{ fontFamily: font }}
-                              />
-                            )
-                          )
+                          (accessLicenseTypes ?? []).map((t: string, i: number) => (
+                            <Chip key={i} label={t} size="small" />
+                          ))
                         ) : (
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                          >
+                          <Typography variant="body2" color="text.secondary">
                             No access types defined.
                           </Typography>
                         )}
@@ -835,32 +712,18 @@ export default function PremiumaccountView() {
             </Card>
           </Box>
 
-          {/* ---------- RIGHT SIDEBAR CARD (image + plan dropdown + cart) ---------- */}
+          {/* RIGHT SIDEBAR: image + plan dropdown + shared cart button */}
           <Box sx={{ width: { xs: "100%", md: 360 } }}>
-            <Card
-              sx={{ borderRadius: 2, boxShadow: 5, mb: 2 }}
-              // no onClick, only buttons control drawer
-            >
-              <CardMedia
-                component="img"
-                height="200"
-                image={courseImage}
-                alt={courseName}
-              />
+            <Card sx={{ borderRadius: 2, boxShadow: 5, mb: 2 }}>
+              <CardMedia component="img" height="200" image={courseImage} alt={courseName} />
               <CardContent>
-                {/* Plan dropdown */}
+                {/* Plan dropdown (mirrors chips selection) */}
                 <FormControl
                   fullWidth
                   size="small"
                   sx={{
                     mt: 1,
                     mb: 2,
-                    "& .MuiInputBase-root": {
-                      fontFamily: "'Montserrat', sans-serif",
-                    },
-                    "& .MuiInputLabel-root": {
-                      fontFamily: "'Montserrat', sans-serif",
-                    },
                   }}
                 >
                   <InputLabel id="plan-select-label">Select Plan</InputLabel>
@@ -871,38 +734,28 @@ export default function PremiumaccountView() {
                     onChange={(e) => {
                       setSelectedPlanIndex(e.target.value as number | "");
                     }}
-                    sx={{ fontFamily: "'Montserrat', sans-serif" }}
                   >
                     <MenuItem value="">
-                      <em style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                        Choose a plan
-                      </em>
+                      <em style={{fontFamily: "'Montserrat', sans-serif"}}>Choose a plan</em>
                     </MenuItem>
                     {plans.map((p, idx) => (
                       <MenuItem
                         key={`${p.duration}-${idx}`}
                         value={idx}
                         disabled={p.stockStatus === "OutOfStock"}
-                        sx={{ fontFamily: "'Montserrat', sans-serif" }}
+                        sx={{fontFamily: "'Montserrat', sans-serif"}}
                       >
-                        {p.duration}{" "}
-                        {p.price != null ? `- ${formatLKR(p.price)}` : ""}{" "}
-                        {p.stockStatus === "OutOfStock"
-                          ? "(Out of stock)"
-                          : ""}
+                        {p.duration} {p.price != null ? `- ${formatLKR(p.price)}` : ""}{" "}
+                        {p.stockStatus === "OutOfStock" ? "(Out of stock)" : ""}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
 
-                {/* Stock status chip */}
+                {/* Stock status */}
                 <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                   <Chip
-                    label={
-                      selectedStock === "InStock"
-                        ? "In Stock"
-                        : "Out of Stock"
-                    }
+                    label={selectedStock === "InStock" ? "In Stock" : "Out of Stock"}
                     color={selectedStock === "InStock" ? "success" : "error"}
                     size="small"
                     sx={{ fontWeight: 600 }}
@@ -910,239 +763,142 @@ export default function PremiumaccountView() {
                 </Box>
 
                 {/* Price */}
-                <Typography
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: 20,
-                    fontFamily: "'Montserrat', sans-serif",
-                  }}
-                >
+                <Typography sx={{ fontWeight: 700, fontSize: 20 }}>
                   {sidebarPriceLabel}
                 </Typography>
 
                 <Divider sx={{ my: 2 }} />
 
+                {/* MAIN BUTTON: behaves like Couresview (Add / View / Hide) */}
                 <Button
                   fullWidth
-                  variant="contained"
-                  sx={{
-                    py: 1.2,
-                    fontFamily: "'Montserrat', sans-serif",
+                  variant={added ? "outlined" : "contained"}
+                  sx={{ py: 1.2 }}
+                  onClick={() => {
+                    if (!added) {
+                      handleCardButtonClick();
+                    } else {
+                      // when already added, just toggle drawer like Couresview
+                      setDrawerOpen((s) => !s);
+                    }
                   }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAddToCart();
-                  }}
-                  disabled={selectedStock === "OutOfStock" || !plans.length}
+                  aria-pressed={added}
+                  disabled={!added && (selectedStock === "OutOfStock" || !plans.length)}
                 >
-                  Add to Cart
+                  {!added ? "Add to Cart" : drawerOpen ? "Hide" : `View (${cartItems.length})`}
                 </Button>
-
-                {cartItems.length > 0 && (
-                  <Button
-                    fullWidth
-                    variant="text"
-                    sx={{
-                      mt: 1,
-                      fontFamily: "'Montserrat', sans-serif",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCartDrawerOpen(true);
-                    }}
-                  >
-                    View Cart ({cartItems.length})
-                  </Button>
-                )}
               </CardContent>
             </Card>
           </Box>
         </Box>
       </Box>
 
-      {/* ---------- CART DRAWER (OTT-only, WhatsApp OTP) ---------- */}
-      <Drawer
-        anchor="right"
-        open={cartDrawerOpen}
-        onClose={() => setCartDrawerOpen(false)}
-      >
+      {/* ---------- Drawer: EXACT same shared cart layout as Couresview ---------- */}
+      <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <Box
           sx={{
-            width: 360,
-            p: 2,
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
+            width: { xs: 320, sm: 480 },
+            p: 3,
+            fontFamily: font,
+            "& *": { fontFamily: `${font} !important` },
           }}
+          role="presentation"
         >
-          {/* Header */}
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 2,
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 700,
-                fontFamily: "'Montserrat', sans-serif",
-              }}
-            >
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
               Your Cart
             </Typography>
-            <Button
-              size="small"
-              onClick={() => setCartDrawerOpen(false)}
-              sx={{ fontFamily: "'Montserrat', sans-serif" }}
-            >
-              CLOSE
-            </Button>
+            <Button onClick={() => setDrawerOpen(false)}>Close</Button>
           </Box>
 
-          {/* Items */}
-          <Box sx={{ flexGrow: 1, overflowY: "auto", pb: 2 }}>
-            {cartItems.length === 0 ? (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ fontFamily: "'Montserrat', sans-serif" }}
-              >
+          <Divider sx={{ my: 2 }} />
+
+          {cartItems.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <Typography variant="body1" color="text.secondary">
                 Your cart is empty.
               </Typography>
-            ) : (
-              cartItems.map((item, idx) => (
+            </Box>
+          ) : (
+            <Stack spacing={2}>
+              {cartItems.map((it) => (
                 <Box
-                  key={`${item.courseId}-${item.duration}-${idx}`}
+                  key={it.id}
                   sx={{
                     display: "flex",
-                    alignItems: "flex-start",
-                    mb: 2,
-                    p: 1.5,
-                    borderRadius: 2,
-                    boxShadow: "0 2px 8px rgba(15,23,42,0.08)",
-                    bgcolor: "#fff",
-                    gap: 1.5,
+                    gap: 2,
+                    alignItems: "center",
+                    p: 1,
+                    borderRadius: 1,
+                    bgcolor: "#fafafa",
                   }}
                 >
-                  <Box
-                    component="img"
-                    src={item.image || DEFAULT_THUMB}
-                    alt={item.name}
-                    sx={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: 1,
-                      objectFit: "cover",
-                      flexShrink: 0,
-                    }}
+                  <Avatar
+                    variant="rounded"
+                    src={it.courseImage}
+                    alt={it.courseName}
+                    sx={{ width: 76, height: 56, bgcolor: "#fff" }}
                   />
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{
-                        fontWeight: 700,
-                        mb: 0.5,
-                        fontFamily: "'Montserrat', sans-serif",
-                      }}
-                    >
-                      {item.name}
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontWeight: 500, fontSize: "13px" }}>
+                      {it.courseName}
                     </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block", mb: 0.5 }}
-                    >
-                      {item.duration}
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                      {it.courseDuration ? `${it.courseDuration} • ` : ""}
+                      {it.courseCategory ?? ""}
                     </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: 700,
-                      }}
-                    >
-                      {formatLKR(item.price)}
-                    </Typography>
+                    <Typography sx={{ mt: 0.5 }}>{formatPrice(it.coursePrice)}</Typography>
                   </Box>
-                  <Box>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => handleRemoveFromCart(idx)}
-                      sx={{
-                        fontSize: 11,
-                        fontFamily: "'Montserrat', sans-serif",
-                      }}
-                    >
-                      REMOVE
-                    </Button>
-                  </Box>
+
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => removeItemById(it.id)}
+                    aria-label={`Remove ${it.courseName}`}
+                  >
+                    Remove
+                  </Button>
                 </Box>
-              ))
-            )}
-          </Box>
+              ))}
 
-          {/* Footer with total + actions */}
-          {cartItems.length > 0 && (
-            <>
-              <Divider sx={{ mb: 2 }} />
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    fontWeight: 600,
-                    fontFamily: "'Montserrat', sans-serif",
-                  }}
-                >
-                  Total
-                </Typography>
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 700,
-                    fontFamily: "'Montserrat', sans-serif",
-                  }}
-                >
-                  {formatLKR(cartTotal)}
-                </Typography>
+              <Divider />
+
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <Box>
+                  <Typography variant="subtitle2">Total</Typography>
+                  <Typography sx={{ fontWeight: 700 }}>
+                    {totalPriceNumber ? `LKR ${totalPriceNumber}` : "—"}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {cartItems.length} item{cartItems.length > 1 ? "s" : ""}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      writeCart([]);
+                      setCartItems([]);
+                      setAdded(false);
+                      setDrawerOpen(false);
+                      setSnack({ text: "Cleared cart", severity: "info" });
+                    }}
+                  >
+                    Clear
+                  </Button>
+
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      openWhatsApp();
+                    }}
+                  >
+                    WhatsApp
+                  </Button>
+                </Box>
               </Box>
-
-              <Box sx={{ display: "flex", gap: 1 }}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  onClick={handleClearCart}
-                  sx={{ fontFamily: "'Montserrat', sans-serif" }}
-                >
-                  CLEAR
-                </Button>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={handleWhatsApp}
-                  sx={{ fontFamily: "'Montserrat', sans-serif" }}
-                >
-                  WHATSAPP
-                </Button>
-              </Box>
-
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ mt: 1, textAlign: "right" }}
-              >
-                {cartItems.length} item{cartItems.length > 1 ? "s" : ""}
-              </Typography>
-            </>
+            </Stack>
           )}
         </Box>
       </Drawer>
