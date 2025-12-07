@@ -225,11 +225,9 @@ const Footer: React.FC = () => {
                 variant="body2"
                 sx={{ lineHeight: 1.7, fontFamily: '"Montserrat", sans-serif' }}
               >
-                Saturday - Thursday
+                Saturday - Friday
                 <br />
-                8:00 am to 6:00 pm
-                <br />
-                Friday Closed.
+                8:00 am to 12:00 pm
               </Typography>
             </Box>
           </Box>
