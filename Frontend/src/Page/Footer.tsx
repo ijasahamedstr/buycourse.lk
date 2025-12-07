@@ -3,13 +3,21 @@ import {
   Box,
   Container,
   Typography,
-  Link,
+  Link as MuiLink,
   IconButton,
   Divider,
 } from "@mui/material";
 import { Facebook, Instagram, Email, Phone } from "@mui/icons-material";
+import { Link as RouterLink } from "react-router-dom";
 
 const Footer: React.FC = () => {
+  const categories = [
+    { label: "Tamil Courses", to: "/tamil-courses" },
+    { label: "Sinhala Courses", to: "/sinhala-courses" },
+    { label: "English Courses", to: "/english-courses" },
+    { label: "Premium Account Service", to: "/premium-account-service" },
+  ];
+
   return (
     <Box component="footer" sx={{ fontFamily: '"Montserrat", sans-serif' }}>
       {/* Main Footer Section */}
@@ -45,13 +53,13 @@ const Footer: React.FC = () => {
                 fontFamily: '"Montserrat", sans-serif',
               }}
             >
-              {/* ⭐ Updated Bigger Logo */}
+              {/* ⭐ Bigger Logo */}
               <Box
                 component="img"
                 src="https://i.ibb.co/9mjM4F3T/Gemini-Generated-Image-ot0pq8ot0pq8ot0p-removebg-preview.png"
                 alt="Vater Logo"
                 sx={{
-                  width: { xs: 200, sm: 220, md: 240 }, // Bigger responsive logo
+                  width: { xs: 200, sm: 220, md: 240 },
                   height: "auto",
                   mb: 2,
                 }}
@@ -102,42 +110,39 @@ const Footer: React.FC = () => {
               }}
             />
 
-            {/* Address */}
+            {/* Categories (NO heading, NO text center) */}
             <Box
               sx={{
                 flexBasis: { xs: "100%", md: "25%" },
-                textAlign: { xs: "center", md: "left" },
+                textAlign: "left",
                 fontFamily: '"Montserrat", sans-serif',
               }}
             >
-              <Typography
-                variant="h6"
+              <Box
                 sx={{
-                  mb: 2,
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                  color: "#0C0A09",
-                  fontFamily: '"Montserrat", sans-serif',
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 0.8,
+                  alignItems: "flex-start",
                 }}
               >
-                ADDRESS
-              </Typography>
-
-              <Typography
-                variant="body2"
-                sx={{
-                  lineHeight: 1.7,
-                  mx: { xs: "auto", md: 0 },
-                  maxWidth: 260,
-                  fontFamily: '"Montserrat", sans-serif',
-                }}
-              >
-               64 Lotus Rd, Colombo 01, Sri Lanka
-                <br />
-                P.O.BOX 05551,
-                <br />
-                Tel: (+94) 76 708 0553,
-              </Typography>
+                {categories.map((cat) => (
+                  <MuiLink
+                    key={cat.label}
+                    component={RouterLink}
+                    to={cat.to}
+                    underline="hover"
+                    color="inherit"
+                    sx={{
+                      fontSize: "0.9rem",
+                      "&:hover": { color: "#cce5ff" },
+                      fontFamily: '"Montserrat", sans-serif',
+                    }}
+                  >
+                    {cat.label}
+                  </MuiLink>
+                ))}
+              </Box>
             </Box>
 
             <Divider
@@ -174,9 +179,9 @@ const Footer: React.FC = () => {
                 variant="body2"
                 sx={{ lineHeight: 1.7, fontFamily: '"Montserrat", sans-serif' }}
               >
-                (+94) 76 708 0553 
+                (+94) 76 708 0553
                 <br />
-                <Link
+                <MuiLink
                   href="mailto:info@buycourse.lk"
                   underline="hover"
                   color="inherit"
@@ -186,8 +191,7 @@ const Footer: React.FC = () => {
                   }}
                 >
                   info@buycourse.lk
-                </Link>{" "}
-      
+                </MuiLink>
               </Typography>
             </Box>
 
@@ -240,11 +244,11 @@ const Footer: React.FC = () => {
           maxWidth="lg"
           sx={{
             display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
-            justifyContent: "space-between",
+            flexDirection: "column",
+            justifyContent: "center",
             alignItems: "center",
             gap: 1,
-            textAlign: { xs: "center", sm: "center" },
+            textAlign: "center",
             fontFamily: '"Montserrat", sans-serif',
           }}
         >
@@ -254,47 +258,6 @@ const Footer: React.FC = () => {
           >
             Copyright © 2026 | buycourse.lk. All rights reserved.
           </Typography>
-
-          <Box
-            sx={{
-              display: { xs: "none", sm: "none", md: "flex" },
-              flexWrap: "wrap",
-              justifyContent: "flex-end",
-              alignItems: "center",
-              fontFamily: '"Montserrat", sans-serif',
-            }}
-          >
-            {["Home", "Tamil Courses", "Sinhala Courses", "English Courses","Premium Account Service"].map(
-              (text, index, array) => (
-                <React.Fragment key={text}>
-                  <Link
-                    href="#"
-                    underline="hover"
-                    color="#FFF"
-                    sx={{
-                      fontSize: "0.85rem",
-                      "&:hover": { color: "#cce5ff" },
-                      fontFamily: '"Montserrat", sans-serif',
-                    }}
-                  >
-                    {text}
-                  </Link>
-                  {index < array.length - 1 && (
-                    <Typography
-                      component="span"
-                      sx={{
-                        mx: 1,
-                        color: "#FFF",
-                        fontSize: "0.85rem",
-                      }}
-                    >
-                      |
-                    </Typography>
-                  )}
-                </React.Fragment>
-              )
-            )}
-          </Box>
         </Container>
       </Box>
     </Box>
