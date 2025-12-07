@@ -257,9 +257,10 @@ const Premiumaccounthome: React.FC = () => {
     };
   }, []);
 
+  // 🔁 UPDATED: navigate to /service/:slug
   const handleSlideClick = (course: Course) => {
     const slug = slugify(course.id || course.title);
-    navigate(`/course/${slug}`);
+    navigate(`/service/${slug}`);
   };
 
   const renderSection = (title: string, list: Course[], viewMorePath: string) => {
@@ -529,7 +530,8 @@ const Premiumaccounthome: React.FC = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           const slug = slugify(course.id || course.title);
-                          navigate(`/course/${slug}`);
+                          // 🔁 UPDATED: View button goes to /service/:slug
+                          navigate(`/service/${slug}`);
                         }}
                         sx={{
                           backgroundColor: "#fff",
@@ -618,7 +620,7 @@ const Premiumaccounthome: React.FC = () => {
                 <Typography variant="body1" color="error" sx={{ mb: 1 }}>
                   {error}
                 </Typography>
-                <Button onClick={() => navigate("/ott-services")} variant="outlined">
+                <Button onClick={() => navigate("/premium-account-service")} variant="outlined">
                   View all OTT services
                 </Button>
               </Box>
@@ -627,14 +629,14 @@ const Premiumaccounthome: React.FC = () => {
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   No OTT services found in the database — showing default courses.
                 </Typography>
-                <Button onClick={() => navigate("/ott-services")} variant="outlined">
+                <Button onClick={() => navigate("/premium-account-service")} variant="outlined">
                   View all OTT services
                 </Button>
               </Box>
             ) : null}
 
             {/* ✅ Single slider showing ALL Ottservice items */}
-            {renderSection("All OTT Services", courses, "/ott-services")}
+            {renderSection("All OTT Services", courses, "/premium-account-service")}
           </>
         )}
       </Container>
