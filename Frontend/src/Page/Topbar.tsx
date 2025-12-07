@@ -13,7 +13,14 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
-import { Phone, Email } from "@mui/icons-material";
+import {
+  Phone,
+  Email,
+  WhatsApp,
+  Facebook,
+  Instagram,
+  YouTube,
+} from "@mui/icons-material";
 
 const inquiryTypes = [
   { value: "Payment Issue", label: "Payment Issue" },
@@ -65,7 +72,6 @@ const Topbar: React.FC = () => {
     return () => {
       window.removeEventListener("openInquiry", onOpenInquiry);
     };
-    // intentionally no dependencies so it registers once
   }, []);
 
   const handleChange = (
@@ -115,7 +121,6 @@ _Sent via buycourse.lk Inquiry Form_
       // clear any old OTT-specific cart if still used
       localStorage.removeItem(OTT_CART_KEY);
 
-      // optional: let other parts of app react if you later hook into this
       try {
         window.dispatchEvent(new Event("cartCleared"));
       } catch {
@@ -178,11 +183,8 @@ _Sent via buycourse.lk Inquiry Form_
       });
 
       setTimeout(() => {
-        // 1) open WhatsApp
         openWhatsApp();
-        // 2) CLEAR ALL ORDER / CART DATA FROM LOCALSTORAGE (ALL PAGES SHARE THIS)
         clearAllOrderLocalStorage();
-        // 3) reset local form + close
         resetForm();
         handleClose();
       }, 300);
@@ -225,20 +227,22 @@ _Sent via buycourse.lk Inquiry Form_
         {/* LEFT COLUMN */}
         <Box
           sx={{
-            width: isMobile ? "50%" : "80%",
+            width: isMobile ? "55%" : "75%",
             display: "flex",
             alignItems: "center",
             px: { xs: 1, sm: 2, md: 4 },
             color: "#fff",
             gap: { xs: 0.5, sm: 1.5, md: 3 },
+            overflow: "hidden",
           }}
         >
           <Typography
             variant="body2"
             sx={{
               fontWeight: 600,
-              color: "FFFFFF",
+              color: "#FFFFFF",
               fontFamily: Montserrat,
+              whiteSpace: "nowrap",
             }}
           >
             Need Assistance? Contact Us:
@@ -251,9 +255,10 @@ _Sent via buycourse.lk Inquiry Form_
                   display: "flex",
                   alignItems: "center",
                   fontFamily: Montserrat,
+                  fontSize: "0.8rem",
                 }}
               >
-                <Phone sx={{ mr: 1 }} />
+                <Phone sx={{ mr: 0.5, fontSize: "1rem" }} />
                 <Link
                   href="tel:+94767080553"
                   underline="none"
@@ -269,9 +274,10 @@ _Sent via buycourse.lk Inquiry Form_
                   display: "flex",
                   alignItems: "center",
                   fontFamily: Montserrat,
+                  fontSize: "0.8rem",
                 }}
               >
-                <Email sx={{ mr: 1 }} />
+                <Email sx={{ mr: 0.5, fontSize: "1rem" }} />
                 <Link
                   href="mailto:info@buycourse.lk"
                   underline="none"
@@ -285,16 +291,108 @@ _Sent via buycourse.lk Inquiry Form_
           )}
         </Box>
 
-        {/* RIGHT COLUMN */}
+        {/* RIGHT COLUMN (SOCIAL + BUTTON) */}
         <Box
           sx={{
-            width: isMobile ? "50%" : "20%",
+            width: isMobile ? "45%" : "25%",
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-end",
             px: { xs: 1, sm: 2, md: 4 },
+            gap: { xs: 0.5, sm: 1 },
           }}
         >
+          {/* Social Icons */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: { xs: 0.7, sm: 1.2 },
+              mr: { xs: 0.5, sm: 1.5 },
+            }}
+          >
+            {/* WhatsApp */}
+            <Link
+              href="https://wa.me/94767080553"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                width: { xs: 26, sm: 30 },
+                height: { xs: 26, sm: 30 },
+                borderRadius: "50%",
+                backgroundColor: "#25D366",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                "&:hover": { opacity: 0.85 },
+              }}
+            >
+              <WhatsApp sx={{ fontSize: { xs: 17, sm: 19 } }} />
+            </Link>
+
+            {/* Facebook */}
+            <Link
+              href="https://www.facebook.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                width: { xs: 26, sm: 30 },
+                height: { xs: 26, sm: 30 },
+                borderRadius: "50%",
+                backgroundColor: "#1877F2",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                "&:hover": { opacity: 0.85 },
+              }}
+            >
+              <Facebook sx={{ fontSize: { xs: 17, sm: 19 } }} />
+            </Link>
+
+            {/* Instagram */}
+            <Link
+              href="https://www.instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                width: { xs: 26, sm: 30 },
+                height: { xs: 26, sm: 30 },
+                borderRadius: "50%",
+                background:
+                  "linear-gradient(45deg, #FEDA75, #FA7E1E, #D62976, #962FBF, #4F5BD5)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                "&:hover": { opacity: 0.85 },
+              }}
+            >
+              <Instagram sx={{ fontSize: { xs: 17, sm: 19 } }} />
+            </Link>
+
+            {/* YouTube */}
+            <Link
+              href="https://www.youtube.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                width: { xs: 26, sm: 30 },
+                height: { xs: 26, sm: 30 },
+                borderRadius: "50%",
+                backgroundColor: "#FF0000",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                "&:hover": { opacity: 0.85 },
+              }}
+            >
+              <YouTube sx={{ fontSize: { xs: 17, sm: 19 } }} />
+            </Link>
+          </Box>
+
           <Button
             variant="contained"
             onClick={handleOpen}
@@ -304,8 +402,11 @@ _Sent via buycourse.lk Inquiry Form_
               color: "#FFFFFF",
               fontWeight: 600,
               borderRadius: "50px",
-              fontSize: "0.75rem",
+              fontSize: { xs: "0.65rem", sm: "0.75rem" },
               fontFamily: Montserrat,
+              px: { xs: 1.5, sm: 2.5 },
+              minWidth: "auto",
+              whiteSpace: "nowrap",
             }}
           >
             Inquire Here
@@ -326,11 +427,15 @@ _Sent via buycourse.lk Inquiry Form_
             borderRadius: 2,
             p: 1,
             boxShadow: 24,
-            // ensure modal content uses Montserrat
             fontFamily: Montserrat,
           }}
         >
-          <Typography variant="h6" fontWeight={700} mb={2} sx={{ fontFamily: Montserrat }}>
+          <Typography
+            variant="h6"
+            fontWeight={700}
+            mb={2}
+            sx={{ fontFamily: Montserrat }}
+          >
             Inquiry Form
           </Typography>
 
@@ -360,10 +465,16 @@ _Sent via buycourse.lk Inquiry Form_
             value={formData.type}
             onChange={handleChange}
             {...textFieldCommon}
-            SelectProps={{ MenuProps: { PaperProps: { sx: { fontFamily: Montserrat } } } }}
+            SelectProps={{
+              MenuProps: { PaperProps: { sx: { fontFamily: Montserrat } } },
+            }}
           >
             {inquiryTypes.map((option) => (
-              <MenuItem key={option.value} value={option.value} sx={{ fontFamily: Montserrat }}>
+              <MenuItem
+                key={option.value}
+                value={option.value}
+                sx={{ fontFamily: Montserrat }}
+              >
                 {option.label}
               </MenuItem>
             ))}
@@ -415,12 +526,20 @@ _Sent via buycourse.lk Inquiry Form_
               fontFamily: Montserrat,
             }}
           >
-            {loading ? <CircularProgress size={20} /> : "Save & Send to WhatsApp"}
+            {loading ? (
+              <CircularProgress size={20} />
+            ) : (
+              "Save & Send to WhatsApp"
+            )}
           </Button>
         </Box>
       </Modal>
 
-      <Snackbar open={snackbar.open} autoHideDuration={5000} onClose={handleSnackbarClose}>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={5000}
+        onClose={handleSnackbarClose}
+      >
         <Alert
           onClose={handleSnackbarClose}
           severity={snackbar.severity}

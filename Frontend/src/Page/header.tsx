@@ -172,7 +172,7 @@ export default function EtsyStyleHeader() {
   ];
 
   const logoUrl =
-    "https://i.ibb.co/JRPnDfqQ/cmh6a26eo000h04jmaveg5yzp-removebg-preview.png";
+    "https://i.ibb.co/9mjM4F3T/Gemini-Generated-Image-ot0pq8ot0pq8ot0p-removebg-preview.png";
 
   const isDarkMode = theme.palette.mode === "dark";
   const bgColor = isDarkMode ? "#0f172a" : "#ffffff";
@@ -396,7 +396,8 @@ export default function EtsyStyleHeader() {
       }
     }
 
-    const API_HOST = (import.meta as any)?.env?.VITE_API_HOST as string | undefined;
+    // ✅ SAME PATTERN: API_HOST from env + error if missing
+    const API_HOST = import.meta.env.VITE_API_HOST as string | undefined;
     if (!API_HOST) {
       setSnackbar({
         open: true,
@@ -515,7 +516,7 @@ export default function EtsyStyleHeader() {
     };
   }, []);
 
-  // -------------------- WhatsApp CHECKOUT (NEW) --------------------
+  // -------------------- WhatsApp CHECKOUT (SAVE DB → THEN SEND) --------------------
   const WA_NUMBER_CHECKOUT = "94767080553";
 
   const formatDate = (ts?: number) => {
@@ -533,43 +534,120 @@ export default function EtsyStyleHeader() {
     return `LKR ${n.toLocaleString()}`;
   };
 
-  const openWhatsAppCheckout = () => {
+  const openWhatsAppCheckout = async () => {
     const stored = readCart();
+
+    if (!stored.length) {
+      setSnackbar({
+        open: true,
+        message: "No items in cart to send.",
+        severity: "warning",
+      });
+      return;
+    }
+
+    // ✅ SAME PATTERN HERE FOR /Odder
+    const API_HOST = import.meta.env.VITE_API_HOST as string | undefined;
+    if (!API_HOST) {
+      setSnackbar({
+        open: true,
+        message: "API host not configured (VITE_API_HOST).",
+        severity: "error",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    const now = Date.now();
+    const orderNumber = `ORD-${now}`;
+    const orderDateISO = new Date(now).toISOString();
+    const orderDateDisplay = formatDate(now);
+
     const totalPriceNumber = stored.reduce(
       (s, c) => s + (Number(c.coursePrice) || 0),
       0
     );
 
-    const orderNumber = `ORD-${Date.now()}`;
-    const orderDate = formatDate(Date.now());
+    // Payload expected by app.use('/Odder', OrderserviceSection);
+    const payload = {
+      name: "Cart Checkout Customer",
+      mobile: "N/A",
+      inquirytype: "Cart Checkout",
+      ordernumber: orderNumber,
+      orderdate: orderDateISO,
+      description: `Cart checkout from header. Items: ${stored.length}, Total: ${
+        totalPriceNumber ? `LKR ${totalPriceNumber.toLocaleString()}` : "—"
+      }`,
+      cartCourses: stored,
+      ottCart: [],
+    };
 
-    let message = `*New Course Order*%0A%0A`;
-    message += `*Order Number:* ${orderNumber}%0A`;
-    message += `*Order Date:* ${orderDate}%0A`;
-    message += `*Items:* ${stored.length}%0A%0A`;
+    try {
+      // 1) SAVE ORDER TO DATABASE
+      const resp = await fetch(`${API_HOST}/Odder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    stored.forEach((it, idx) => {
-      const name = it.courseName || "N/A";
-      const price = formatPrice(it.coursePrice);
-      const category = it.courseCategory || "N/A";
-      const duration = it.courseDuration || "N/A";
-      const added = it.addedAt ? formatDate(it.addedAt) : "N/A";
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => null);
+        throw new Error(err?.message || `Server responded with ${resp.status}`);
+      }
 
-      message += `*${idx + 1}. ${name}*%0A`;
-      message += `Price: ${price}%0A`;
-      message += `Category: ${category}%0A`;
-      message += `Duration: ${duration}%0A`;
-      message += `Added: ${added}%0A%0A`;
-    });
+      await resp.json().catch(() => {});
 
-    message += `*Total Items:* ${stored.length}%0A`;
-    message += `*Total Price:* ${
-      totalPriceNumber ? `LKR ${totalPriceNumber.toLocaleString()}` : "—"
-    }%0A%0A`;
-    message += `_Sent via buycourse.lk WhatsApp Checkout_`;
+      // 2) BUILD WHATSAPP MESSAGE
+      let message = `*New Course Order*\n\n`;
+      message += `*Order Number:* ${orderNumber}\n`;
+      message += `*Order Date:* ${orderDateDisplay}\n`;
+      message += `*Items:* ${stored.length}\n\n`;
 
-    const url = `https://wa.me/${WA_NUMBER_CHECKOUT}?text=${message}`;
-    window.open(url, "_blank");
+      stored.forEach((it, idx) => {
+        const name = it.courseName || "N/A";
+        const price = formatPrice(it.coursePrice);
+        const category = it.courseCategory || "N/A";
+        const duration = it.courseDuration || "N/A";
+        const added = it.addedAt ? formatDate(it.addedAt) : "N/A";
+
+        message += `*${idx + 1}. ${name}*\n`;
+        message += `Price: ${price}\n`;
+        message += `Category: ${category}\n`;
+        message += `Duration: ${duration}\n`;
+        message += `Added: ${added}\n\n`;
+      });
+
+      message += `*Total Items:* ${stored.length}\n`;
+      message += `*Total Price:* ${
+        totalPriceNumber ? `LKR ${totalPriceNumber.toLocaleString()}` : "—"
+      }\n\n`;
+      message += `_Sent via buycourse.lk WhatsApp Checkout_`;
+
+      // 3) OPEN WHATSAPP
+      const encoded = encodeURIComponent(message);
+      const url = `https://wa.me/${WA_NUMBER_CHECKOUT}?text=${encoded}`;
+      window.open(url, "_blank");
+
+      // 4) CLEAR CART + CLOSE DRAWER
+      clearCart();
+      setCartItems([]);
+      setCartOpen(false);
+
+      setSnackbar({
+        open: true,
+        message: "Order saved & sent via WhatsApp.",
+        severity: "success",
+      });
+    } catch (error: any) {
+      setSnackbar({
+        open: true,
+        message: error?.message || "Failed to save order.",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -1176,7 +1254,11 @@ export default function EtsyStyleHeader() {
                           height: 40,
                         }}
                       >
-                        WHATSAPP
+                        {loading ? (
+                          <CircularProgress size={18} sx={{ color: "#fff" }} />
+                        ) : (
+                          "WHATSAPP"
+                        )}
                       </Button>
                     </Box>
                   </Box>

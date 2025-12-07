@@ -1,3 +1,4 @@
+import Premiumaccounthome from "./Premiumaccounthome";
 import Programmes from "./Programmes";
 import Slider from "./Slider";
 
@@ -6,6 +7,7 @@ const Home: React.FC = () => {
     <>
     <Slider/>
     <Programmes/>
+    <Premiumaccounthome/>
     </>
   );
 };

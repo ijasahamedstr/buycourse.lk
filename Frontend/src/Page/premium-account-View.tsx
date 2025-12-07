@@ -531,35 +531,98 @@ export default function PremiumaccountView() {
 
   const WA_NUMBER = "94767080553";
 
-  const openWhatsApp = () => {
-    const orderNumber = `ORD-${Date.now()}`;
-    const orderDate = formatDate(Date.now());
+  // ✅ UPDATED: FIRST SAVE TO /Odder (with ottCart) THEN OPEN WHATSAPP + CLEAR CART
+  const openWhatsApp = async () => {
+    if (!cartItems.length) {
+      setSnack({ text: "No items in cart to send.", severity: "info" });
+      return;
+    }
 
-    let message = `*New Course Order*%0A%0A`;
-    message += `*Order Number:* ${orderNumber}%0A`;
-    message += `*Order Date:* ${orderDate}%0A`;
-    message += `*Items:* ${cartItems.length}%0A%0A`;
+    const API_HOST = import.meta.env.VITE_API_HOST as string | undefined;
+    if (!API_HOST) {
+      setSnack({
+        text: "API host not configured (VITE_API_HOST).",
+        severity: "error",
+      });
+      return;
+    }
 
-    cartItems.forEach((it, idx) => {
-      const name = it.courseName || "N/A";
-      const price = formatPrice(it.coursePrice);
-      const category = it.courseCategory || "N/A";
-      const duration = it.courseDuration || "N/A";
-      const addedAt = it.addedAt ? formatDate(it.addedAt) : "N/A";
+    const now = Date.now();
+    const orderNumber = `ORD-${now}`;
+    const orderDateISO = new Date(now).toISOString();
+    const orderDateDisplay = formatDate(now);
+    const totalStr = totalPriceNumber ? `LKR ${totalPriceNumber.toLocaleString()}` : "—";
 
-      message += `*${idx + 1}. ${name}*%0A`;
-      message += `Price: ${price}%0A`;
-      message += `Category: ${category}%0A`;
-      message += `Duration: ${duration}%0A`;
-      message += `Added: ${addedAt}%0A%0A`;
-    });
+    const payload = {
+      name: "Premium account customer",
+      mobile: "N/A",
+      inquirytype: "Premium / OTT Cart Checkout",
+      ordernumber: orderNumber,
+      orderdate: orderDateISO,
+      description: `Cart checkout from PremiumaccountView page. Items: ${cartItems.length}, Total: ${totalStr}`,
+      cartCourses: [],          // ✅ this page is OTT, so we put data into ottCart
+      ottCart: cartItems,
+    };
 
-    message += `*Total Items:* ${cartItems.length}%0A`;
-    message += `*Total Price:* ${totalPriceNumber ? `LKR ${totalPriceNumber}` : "—"}%0A%0A`;
-    message += `_Sent via buycourse.lk WhatsApp Checkout_`;
+    try {
+      // 1) SAVE ORDER TO DATABASE
+      const resp = await fetch(`${API_HOST}/Odder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    const url = `https://wa.me/${WA_NUMBER}?text=${message}`;
-    window.open(url, "_blank");
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => null);
+        throw new Error(err?.message || `Server responded with ${resp.status}`);
+      }
+
+      await resp.json().catch(() => {});
+
+      // 2) BUILD WHATSAPP MESSAGE (pretty, then URL-encode)
+      let message = `*New Premium / OTT Order*\n\n`;
+      message += `*Order Number:* ${orderNumber}\n`;
+      message += `*Order Date:* ${orderDateDisplay}\n`;
+      message += `*Items:* ${cartItems.length}\n\n`;
+
+      cartItems.forEach((it, idx) => {
+        const name = it.courseName || "N/A";
+        const price = formatPrice(it.coursePrice);
+        const category = it.courseCategory || "N/A";
+        const duration = it.courseDuration || "N/A";
+        const addedAt = it.addedAt ? formatDate(it.addedAt) : "N/A";
+
+        message += `*${idx + 1}. ${name}*\n`;
+        message += `Price: ${price}\n`;
+        message += `Category: ${category}\n`;
+        message += `Duration: ${duration}\n`;
+        message += `Added: ${addedAt}\n\n`;
+      });
+
+      message += `*Total Items:* ${cartItems.length}\n`;
+      message += `*Total Price:* ${totalStr}\n\n`;
+      message += `_Sent via buycourse.lk WhatsApp Checkout_`;
+
+      const encoded = encodeURIComponent(message);
+      const url = `https://wa.me/${WA_NUMBER}?text=${encoded}`;
+      window.open(url, "_blank");
+
+      // 3) CLEAR CART (all pages) + CLOSE DRAWER
+      clearAllCartStorage();
+      setCartItems([]);
+      setAdded(false);
+      setDrawerOpen(false);
+
+      setSnack({
+        text: "Order saved & sent via WhatsApp.",
+        severity: "success",
+      });
+    } catch (error: any) {
+      setSnack({
+        text: error?.message || "Failed to save order.",
+        severity: "error",
+      });
+    }
   };
 
   /* -------------------- UI -------------------- */
@@ -644,13 +707,13 @@ export default function PremiumaccountView() {
                       <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap", mb: 1 }}>
                         <Box>
                           <Typography sx={{ fontWeight: 700, fontSize: 18 }}>Plans</Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ fontFamily: "'Montserrat', sans-serif" }}>
+                          <Typography variant="body2" color="text.secondary">
                             Choose a plan duration
                           </Typography>
                         </Box>
 
-                        <Box sx={{ ml: "auto", display: "flex", gap: 1, alignItems: "center", fontFamily: "'Montserrat', sans-serif" }}>
-                          <Typography sx={{ fontWeight: 800, fontSize: 18, fontFamily: "'Montserrat', sans-serif" }}>
+                        <Box sx={{ ml: "auto", display: "flex", gap: 1, alignItems: "center" }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: 18 }}>
                             {Number.isNaN(minPrice)
                               ? formatLKR(rawPrice)
                               : minPrice === maxPrice

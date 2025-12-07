@@ -352,41 +352,101 @@ export default function Couresview() {
   /* ---------- WhatsApp checkout ---------- */
   const WA_NUMBER = "94767080553";
 
-  const openWhatsApp = () => {
-    // build order meta
-    const orderNumber = `ORD-${Date.now()}`; // simple order id — replace with server id if you have one
-    const orderDate = formatDate(Date.now());
+  // 🔴 UPDATED: FIRST SAVE TO /Odder THEN OPEN WHATSAPP + CLEAR CART
+  const openWhatsApp = async () => {
+    if (!cartItems.length) {
+      setSnack({ text: "No items in cart to send.", severity: "info" });
+      return;
+    }
 
-    // build message header
-    let message = `*New Course Order*%0A%0A`;
+    // ✅ Same API host pattern
+    const API_HOST = import.meta.env.VITE_API_HOST as string | undefined;
+    if (!API_HOST) {
+      setSnack({
+        text: "API host not configured (VITE_API_HOST).",
+        severity: "error",
+      });
+      return;
+    }
 
-    // order meta
-    message += `*Order Number:* ${orderNumber}%0A`;
-    message += `*Order Date:* ${orderDate}%0A`;
-    message += `*Items:* ${cartItems.length}%0A%0A`;
+    const now = Date.now();
+    const orderNumber = `ORD-${now}`;
+    const orderDateISO = new Date(now).toISOString();
+    const orderDateDisplay = formatDate(now);
 
-    // list each course
-    cartItems.forEach((it, idx) => {
-      const name = it.courseName || "N/A";
-      const price = formatPrice(it.coursePrice);
-      const category = it.courseCategory || "N/A";
-      const duration = it.courseDuration || "N/A";
-      const added = it.addedAt ? formatDate(it.addedAt) : "N/A";
+    // description text
+    const totalStr = totalPriceNumber ? `LKR ${totalPriceNumber.toLocaleString()}` : "—";
 
-      message += `*${idx + 1}. ${name}*%0A`;
-      message += `Price: ${price}%0A`;
-      message += `Category: ${category}%0A`;
-      message += `Duration: ${duration}%0A`;
-      message += `Added: ${added}%0A%0A`;
-    });
+    const payload = {
+      name: "Courseview Customer",
+      mobile: "N/A",
+      inquirytype: "Course Cart Checkout",
+      ordernumber: orderNumber,
+      orderdate: orderDateISO,
+      description: `Cart checkout from Couresview page. Items: ${cartItems.length}, Total: ${totalStr}`,
+      cartCourses: cartItems,
+      ottCart: [],
+    };
 
-    // totals & footer
-    message += `*Total Items:* ${cartItems.length}%0A`;
-    message += `*Total Price:* ${totalPriceNumber ? `LKR ${totalPriceNumber}` : "—"}%0A%0A`;
-    message += `_Sent via buycourse.lk WhatsApp Checkout_`;
+    try {
+      // 1) SAVE ORDER TO DATABASE
+      const resp = await fetch(`${API_HOST}/Odder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    const url = `https://wa.me/${WA_NUMBER}?text=${message}`;
-    window.open(url, "_blank");
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => null);
+        throw new Error(err?.message || `Server responded with ${resp.status}`);
+      }
+
+      await resp.json().catch(() => {});
+
+      // 2) BUILD WHATSAPP MESSAGE
+      let message = `*New Course Order*\n\n`;
+      message += `*Order Number:* ${orderNumber}\n`;
+      message += `*Order Date:* ${orderDateDisplay}\n`;
+      message += `*Items:* ${cartItems.length}\n\n`;
+
+      cartItems.forEach((it, idx) => {
+        const name = it.courseName || "N/A";
+        const price = formatPrice(it.coursePrice);
+        const category = it.courseCategory || "N/A";
+        const duration = it.courseDuration || "N/A";
+        const added = it.addedAt ? formatDate(it.addedAt) : "N/A";
+
+        message += `*${idx + 1}. ${name}*\n`;
+        message += `Price: ${price}\n`;
+        message += `Category: ${category}\n`;
+        message += `Duration: ${duration}\n`;
+        message += `Added: ${added}\n\n`;
+      });
+
+      message += `*Total Items:* ${cartItems.length}\n`;
+      message += `*Total Price:* ${totalStr}\n\n`;
+      message += `_Sent via buycourse.lk WhatsApp Checkout_`;
+
+      const encoded = encodeURIComponent(message);
+      const url = `https://wa.me/${WA_NUMBER}?text=${encoded}`;
+      window.open(url, "_blank");
+
+      // 3) CLEAR CART (ALL PAGES) + CLOSE DRAWER
+      clearAllCartStorage();
+      setCartItems([]);
+      setAdded(false);
+      setDrawerOpen(false);
+
+      setSnack({
+        text: "Order saved & sent via WhatsApp.",
+        severity: "success",
+      });
+    } catch (error: any) {
+      setSnack({
+        text: error?.message || "Failed to save order.",
+        severity: "error",
+      });
+    }
   };
 
   /* ---------- UI states ---------- */
@@ -825,7 +885,7 @@ export default function Couresview() {
                     Clear
                   </Button>
 
-                  {/* WhatsApp button */}
+                  {/* WhatsApp button — now SAVE DB THEN SEND */}
                   <Button
                     variant="contained"
                     onClick={() => {
