@@ -132,7 +132,7 @@ const Footer: React.FC = () => {
                   fontFamily: '"Montserrat", sans-serif',
                 }}
               >
-               Galadari Hotel, 64 Lotus Rd, Colombo 01, Sri Lanka
+               64 Lotus Rd, Colombo 01, Sri Lanka
                 <br />
                 P.O.BOX 05551,
                 <br />
