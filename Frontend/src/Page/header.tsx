@@ -113,7 +113,7 @@ function removeItemById(id: string) {
 // Use exact fontFamily string requested
 const Montserrat = "'Montserrat', sans-serif";
 
-// Developer-provided preview image path (used as cart thumbnail fallback)
+// Developer-provided preview image path (used as cart fallback)
 const previewImg = "/mnt/data/sdwqdqwd.JPG";
 
 const SearchContainer = styled("div")(() => ({
@@ -159,9 +159,9 @@ export default function EtsyStyleHeader() {
   const [bottomNavValue, setBottomNavValue] = useState<string>("home");
 
   // Header cart shape: keep qty property for potential qty support
-  const [cartItems, setCartItems] = useState<Array<{ id: string; title: string; qty: number }>>(
-    []
-  );
+  const [cartItems, setCartItems] = useState<
+    Array<{ id: string; title: string; qty: number }>
+  >([]);
 
   const categories: { label: string; path: string }[] = [
     { label: "Tamil Courses", path: "/tamil-courses" },
@@ -200,7 +200,7 @@ export default function EtsyStyleHeader() {
     desc?: string;
   }>({});
 
-  // Inquiry (right dialog) form — ORDER fields removed
+  // Inquiry (right dialog) form
   const [inquiryDialogOpen, setInquiryDialogOpen] = useState(false);
   const [inqName, setInqName] = useState("");
   const [inqMobile, setInqMobile] = useState("");
@@ -249,13 +249,17 @@ export default function EtsyStyleHeader() {
   useEffect(() => {
     const onCartUpdated = () => {
       const items = readCart();
-      setCartItems(items.map((s) => ({ id: s.id, title: s.courseName || s.id, qty: 1 })));
+      setCartItems(
+        items.map((s) => ({ id: s.id, title: s.courseName || s.id, qty: 1 }))
+      );
     };
 
     const onStorage = (e: StorageEvent) => {
       if (e.key === CART_KEY) {
         const items = readCart();
-        setCartItems(items.map((s) => ({ id: s.id, title: s.courseName || s.id, qty: 1 })));
+        setCartItems(
+          items.map((s) => ({ id: s.id, title: s.courseName || s.id, qty: 1 }))
+        );
       }
     };
 
@@ -287,10 +291,12 @@ export default function EtsyStyleHeader() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      if (matches.length > 0) setHighlightIndex((i) => (i + 1) % matches.length);
+      if (matches.length > 0)
+        setHighlightIndex((i) => (i + 1) % matches.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      if (matches.length > 0) setHighlightIndex((i) => (i - 1 + matches.length) % matches.length);
+      if (matches.length > 0)
+        setHighlightIndex((i) => (i - 1 + matches.length) % matches.length);
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (matches.length > 0) {
@@ -321,7 +327,8 @@ export default function EtsyStyleHeader() {
     if (!reqMobile.trim()) errs.mobile = "Please enter your mobile number";
     const digits = reqMobile.replace(/\D/g, "");
     if (digits.length < 7 || digits.length > 15)
-      errs.mobile = "Enter a valid phone number (include country code if available)";
+      errs.mobile =
+        "Enter a valid phone number (include country code if available)";
     if (!reqType) errs.type = "Select a request type";
     if (!reqDesc.trim()) errs.desc = "Describe your request briefly";
     setReqErrors(errs);
@@ -352,7 +359,9 @@ export default function EtsyStyleHeader() {
       messageData.name
     }\n*Mobile:* ${messageData.mobile}\n*Request Type:* ${
       messageData.requestservicestype
-    }\n\n*Description:*\n${messageData.description}\n\n_Sent via buycourse.lk_`;
+    }\n\n*Description:*\n${
+      messageData.description
+    }\n\n_Sent via buycourse.lk_`;
 
     const phone = "94767080553";
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
@@ -491,14 +500,18 @@ export default function EtsyStyleHeader() {
     };
     addItem(storedItem);
     const items = readCart();
-    setCartItems(items.map((s) => ({ id: s.id, title: s.courseName || s.id, qty: 1 })));
+    setCartItems(
+      items.map((s) => ({ id: s.id, title: s.courseName || s.id, qty: 1 }))
+    );
     setSnackbar({ open: true, message: "Added to cart", severity: "success" });
   };
 
   const removeFromCart = (id: string) => {
     removeItemById(id);
     const items = readCart();
-    setCartItems(items.map((s) => ({ id: s.id, title: s.courseName || s.id, qty: 1 })));
+    setCartItems(
+      items.map((s) => ({ id: s.id, title: s.courseName || s.id, qty: 1 }))
+    );
     setSnackbar({ open: true, message: "Removed from cart", severity: "info" });
   };
 
@@ -849,7 +862,7 @@ export default function EtsyStyleHeader() {
             </ClickAwayListener>
           )}
 
-          {/* Right icons – desktop only (🔒 hidden on mobile & tablet) */}
+          {/* Right icons – desktop only (hidden on mobile & tablet) */}
           {showSearchAndRight && (
             <Box
               sx={{
@@ -889,7 +902,11 @@ export default function EtsyStyleHeader() {
         onClose={() => setDrawerOpen(false)}
         ModalProps={{ keepMounted: true }}
         PaperProps={{
-          sx: { width: 320, zIndex: (t) => t.zIndex.drawer + 3, fontFamily: Montserrat },
+          sx: {
+            width: 320,
+            zIndex: (t) => t.zIndex.drawer + 3,
+            fontFamily: Montserrat,
+          },
         }}
       >
         <Box sx={{ p: 2 }}>
@@ -933,7 +950,11 @@ export default function EtsyStyleHeader() {
                 typeof window !== "undefined" ? window.location.pathname : "/";
               const isActive = pathname === cat.path;
               return (
-                <ListItem disablePadding key={cat.path} sx={{ fontFamily: Montserrat }}>
+                <ListItem
+                  disablePadding
+                  key={cat.path}
+                  sx={{ fontFamily: Montserrat }}
+                >
                   {cat.label === "Request Service" ? (
                     <ListItemButton
                       onClick={() => {
@@ -1246,7 +1267,10 @@ export default function EtsyStyleHeader() {
                         }}
                       >
                         {loading ? (
-                          <CircularProgress size={18} sx={{ color: "#fff" }} />
+                          <CircularProgress
+                            size={18}
+                            sx={{ color: "#fff" }}
+                          />
                         ) : (
                           "WHATSAPP"
                         )}
@@ -1390,7 +1414,7 @@ export default function EtsyStyleHeader() {
         </DialogActions>
       </Dialog>
 
-      {/* Inquiry Dialog (NO PREVIEW COLUMN) */}
+      {/* Inquiry Dialog – preview removed as requested */}
       <Dialog
         open={inquiryDialogOpen}
         onClose={() => setInquiryDialogOpen(false)}
