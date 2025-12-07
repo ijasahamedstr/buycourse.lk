@@ -12,6 +12,8 @@ import {
   Snackbar,
   Alert,
   CircularProgress,
+  Drawer,
+  IconButton,
 } from "@mui/material";
 import {
   Phone,
@@ -20,6 +22,7 @@ import {
   Facebook,
   Instagram,
   YouTube,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 
 const inquiryTypes = [
@@ -38,8 +41,10 @@ const OTT_CART_KEY = "ottCart";
 const Topbar: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
 
   const [open, setOpen] = useState(false);
+  const [socialDrawerOpen, setSocialDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -302,96 +307,112 @@ _Sent via buycourse.lk Inquiry Form_
             gap: { xs: 0.5, sm: 1 },
           }}
         >
-          {/* Social Icons */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: { xs: 0.7, sm: 1.2 },
-              mr: { xs: 0.5, sm: 1.5 },
-            }}
-          >
-            {/* WhatsApp */}
-            <Link
-              href="https://wa.me/94767080553"
-              target="_blank"
-              rel="noopener noreferrer"
+          {/* Social Icons - DESKTOP ONLY */}
+          {!isMobile && !isTablet && (
+            <Box
               sx={{
-                width: { xs: 26, sm: 30 },
-                height: { xs: 26, sm: 30 },
-                borderRadius: "50%",
-                backgroundColor: "#25D366",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                "&:hover": { opacity: 0.85 },
+                gap: { xs: 0.7, sm: 1.2 },
+                mr: { xs: 0.5, sm: 1.5 },
               }}
             >
-              <WhatsApp sx={{ fontSize: { xs: 17, sm: 19 } }} />
-            </Link>
+              {/* WhatsApp */}
+              <Link
+                href="https://wa.me/94767080553"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  width: { xs: 26, sm: 30 },
+                  height: { xs: 26, sm: 30 },
+                  borderRadius: "50%",
+                  backgroundColor: "#25D366",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  "&:hover": { opacity: 0.85 },
+                }}
+              >
+                <WhatsApp sx={{ fontSize: { xs: 17, sm: 19 } }} />
+              </Link>
 
-            {/* Facebook */}
-            <Link
-              href="https://www.facebook.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                width: { xs: 26, sm: 30 },
-                height: { xs: 26, sm: 30 },
-                borderRadius: "50%",
-                backgroundColor: "#1877F2",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                "&:hover": { opacity: 0.85 },
-              }}
-            >
-              <Facebook sx={{ fontSize: { xs: 17, sm: 19 } }} />
-            </Link>
+              {/* Facebook */}
+              <Link
+                href="https://www.facebook.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  width: { xs: 26, sm: 30 },
+                  height: { xs: 26, sm: 30 },
+                  borderRadius: "50%",
+                  backgroundColor: "#1877F2",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  "&:hover": { opacity: 0.85 },
+                }}
+              >
+                <Facebook sx={{ fontSize: { xs: 17, sm: 19 } }} />
+              </Link>
 
-            {/* Instagram */}
-            <Link
-              href="https://www.instagram.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                width: { xs: 26, sm: 30 },
-                height: { xs: 26, sm: 30 },
-                borderRadius: "50%",
-                background:
-                  "linear-gradient(45deg, #FEDA75, #FA7E1E, #D62976, #962FBF, #4F5BD5)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                "&:hover": { opacity: 0.85 },
-              }}
-            >
-              <Instagram sx={{ fontSize: { xs: 17, sm: 19 } }} />
-            </Link>
+              {/* Instagram */}
+              <Link
+                href="https://www.instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  width: { xs: 26, sm: 30 },
+                  height: { xs: 26, sm: 30 },
+                  borderRadius: "50%",
+                  background:
+                    "linear-gradient(45deg, #FEDA75, #FA7E1E, #D62976, #962FBF, #4F5BD5)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  "&:hover": { opacity: 0.85 },
+                }}
+              >
+                <Instagram sx={{ fontSize: { xs: 17, sm: 19 } }} />
+              </Link>
 
-            {/* YouTube */}
-            <Link
-              href="https://www.youtube.com"
-              target="_blank"
-              rel="noopener noreferrer"
+              {/* YouTube */}
+              <Link
+                href="https://www.youtube.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  width: { xs: 26, sm: 30 },
+                  height: { xs: 26, sm: 30 },
+                  borderRadius: "50%",
+                  backgroundColor: "#FF0000",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  "&:hover": { opacity: 0.85 },
+                }}
+              >
+                <YouTube sx={{ fontSize: { xs: 17, sm: 19 } }} />
+              </Link>
+            </Box>
+          )}
+
+          {/* Mobile / Tablet: button to open SOCIAL DRAWER */}
+          {(isMobile || isTablet) && (
+            <IconButton
+              onClick={() => setSocialDrawerOpen(true)}
               sx={{
-                width: { xs: 26, sm: 30 },
-                height: { xs: 26, sm: 30 },
-                borderRadius: "50%",
-                backgroundColor: "#FF0000",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                mr: { xs: 0.5, sm: 1 },
                 color: "#fff",
-                "&:hover": { opacity: 0.85 },
               }}
+              aria-label="open social links"
             >
-              <YouTube sx={{ fontSize: { xs: 17, sm: 19 } }} />
-            </Link>
-          </Box>
+              <WhatsApp sx={{ fontSize: { xs: 20, sm: 22 } }} />
+            </IconButton>
+          )}
 
           <Button
             variant="contained"
@@ -413,6 +434,176 @@ _Sent via buycourse.lk Inquiry Form_
           </Button>
         </Box>
       </Box>
+
+      {/* SOCIAL MEDIA DRAWER (Mobile / Tablet) */}
+      <Drawer
+        anchor="right"
+        open={socialDrawerOpen}
+        onClose={() => setSocialDrawerOpen(false)}
+        PaperProps={{
+          sx: {
+            width: 260,
+            p: 2,
+            bgcolor: "#111827",
+            color: "#fff",
+            fontFamily: Montserrat,
+          },
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <Typography
+            variant="subtitle1"
+            sx={{ fontFamily: Montserrat, fontWeight: 600 }}
+          >
+            Follow us
+          </Typography>
+          <IconButton
+            onClick={() => setSocialDrawerOpen(false)}
+            sx={{ color: "#fff" }}
+            aria-label="close social drawer"
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {/* WhatsApp */}
+          <Button
+            component={Link}
+            href="https://wa.me/94767080553"
+            target="_blank"
+            rel="noopener noreferrer"
+            startIcon={
+              <Box
+                sx={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: "50%",
+                  backgroundColor: "#25D366",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                }}
+              >
+                <WhatsApp sx={{ fontSize: 18 }} />
+              </Box>
+            }
+            sx={{
+              justifyContent: "flex-start",
+              color: "#e5e7eb",
+              textTransform: "none",
+              fontFamily: Montserrat,
+            }}
+          >
+            WhatsApp
+          </Button>
+
+          {/* Facebook */}
+          <Button
+            component={Link}
+            href="https://www.facebook.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            startIcon={
+              <Box
+                sx={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: "50%",
+                  backgroundColor: "#1877F2",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                }}
+              >
+                <Facebook sx={{ fontSize: 18 }} />
+              </Box>
+            }
+            sx={{
+              justifyContent: "flex-start",
+              color: "#e5e7eb",
+              textTransform: "none",
+              fontFamily: Montserrat,
+            }}
+          >
+            Facebook
+          </Button>
+
+          {/* Instagram */}
+          <Button
+            component={Link}
+            href="https://www.instagram.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            startIcon={
+              <Box
+                sx={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: "50%",
+                  background:
+                    "linear-gradient(45deg, #FEDA75, #FA7E1E, #D62976, #962FBF, #4F5BD5)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                }}
+              >
+                <Instagram sx={{ fontSize: 18 }} />
+              </Box>
+            }
+            sx={{
+              justifyContent: "flex-start",
+              color: "#e5e7eb",
+              textTransform: "none",
+              fontFamily: Montserrat,
+            }}
+          >
+            Instagram
+          </Button>
+
+          {/* YouTube */}
+          <Button
+            component={Link}
+            href="https://www.youtube.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            startIcon={
+              <Box
+                sx={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: "50%",
+                  backgroundColor: "#FF0000",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                }}
+              >
+                <YouTube sx={{ fontSize: 18 }} />
+              </Box>
+            }
+            sx={{
+              justifyContent: "flex-start",
+              color: "#e5e7eb",
+              textTransform: "none",
+              fontFamily: Montserrat,
+            }}
+          >
+            YouTube
+          </Button>
+        </Box>
+      </Drawer>
 
       {/* FORM MODAL */}
       <Modal open={open} onClose={handleClose}>

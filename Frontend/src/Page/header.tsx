@@ -231,6 +231,7 @@ export default function EtsyStyleHeader() {
     if (value === "categories") setDrawerOpen(true);
     if (value === "chat") window.dispatchEvent(new Event("openInquiry"));
     if (value === "cart") setCartOpen(true);
+    if (value === "home") navigate("/");
   };
 
   // Initialize header cart from shared localStorage
@@ -850,16 +851,16 @@ export default function EtsyStyleHeader() {
             </ClickAwayListener>
           )}
 
-          {/* Right icons */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 2,
-              fontFamily: Montserrat,
-            }}
-          >
-            {showSearchAndRight ? (
+          {/* Right icons – desktop only (🔒 hidden on mobile & tablet) */}
+          {showSearchAndRight && (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                fontFamily: Montserrat,
+              }}
+            >
               <IconButton
                 onClick={() => setCartOpen(true)}
                 sx={{
@@ -878,16 +879,8 @@ export default function EtsyStyleHeader() {
                   <ShoppingBagIcon sx={{ color: "#555" }} />
                 </Badge>
               </IconButton>
-            ) : (
-              <IconButton
-                onClick={() => setDrawerOpen(true)}
-                sx={{ color: "#555", fontFamily: Montserrat }}
-                aria-label="open-menu"
-              >
-                <MenuIcon />
-              </IconButton>
-            )}
-          </Box>
+            </Box>
+          )}
         </Toolbar>
       </AppBar>
 
