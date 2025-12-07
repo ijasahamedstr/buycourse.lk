@@ -225,13 +225,27 @@ export default function EtsyStyleHeader() {
     severity: "info",
   });
 
-  // Bottom nav handler
+  // ✅ UPDATED: Bottom nav handler – always close others before opening new
   const handleBottomNavClick = (value: string) => {
     setBottomNavValue(value);
-    if (value === "categories") setDrawerOpen(true);
-    if (value === "chat") window.dispatchEvent(new Event("openInquiry"));
-    if (value === "cart") setCartOpen(true);
-    if (value === "home") navigate("/");
+
+    // Close everything first (so only 1 is open)
+    setDrawerOpen(false);
+    setCartOpen(false);
+    setRequestDialogOpen(false);
+    setInquiryDialogOpen(false);
+
+    if (value === "categories") {
+      setDrawerOpen(true);
+    } else if (value === "chat") {
+      // open inquiry dialog via event (and local flag if needed)
+      window.dispatchEvent(new Event("openInquiry"));
+      setInquiryDialogOpen(true);
+    } else if (value === "cart") {
+      setCartOpen(true);
+    } else if (value === "home") {
+      navigate("/");
+    }
   };
 
   // Initialize header cart from shared localStorage
@@ -384,7 +398,7 @@ export default function EtsyStyleHeader() {
     setInqErrors({});
   };
 
-  // Unified save -> share helper (ORDER fields removed)
+  // Unified save -> share helper
   const saveAndShare = async (type: "request" | "inquiry") => {
     if (type === "request") {
       if (!validateRequestForm()) {
@@ -480,7 +494,7 @@ export default function EtsyStyleHeader() {
     return () => window.removeEventListener("openInquiry", handler);
   }, []);
 
-  // ---------- CART helpers that use inline util ----------
+  // ---------- CART helpers ----------
   const addToCart = (product: {
     id: string;
     title: string;
@@ -581,7 +595,6 @@ export default function EtsyStyleHeader() {
       0
     );
 
-    // Payload expected by app.use('/Odder', OrderserviceSection);
     const payload = {
       name: "Cart Checkout Customer",
       mobile: "N/A",
@@ -596,7 +609,6 @@ export default function EtsyStyleHeader() {
     };
 
     try {
-      // 1) SAVE ORDER TO DATABASE
       const resp = await fetch(`${API_HOST}/Odder`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -610,7 +622,6 @@ export default function EtsyStyleHeader() {
 
       await resp.json().catch(() => {});
 
-      // 2) BUILD WHATSAPP MESSAGE
       let message = `*New Course Order*\n\n`;
       message += `*Order Number:* ${orderNumber}\n`;
       message += `*Order Date:* ${orderDateDisplay}\n`;
@@ -636,12 +647,10 @@ export default function EtsyStyleHeader() {
       }\n\n`;
       message += `_Sent via buycourse.lk WhatsApp Checkout_`;
 
-      // 3) OPEN WHATSAPP
       const encoded = encodeURIComponent(message);
       const url = `https://wa.me/${WA_NUMBER_CHECKOUT}?text=${encoded}`;
       window.open(url, "_blank");
 
-      // 4) CLEAR CART + CLOSE DRAWER
       clearCart();
       setCartItems([]);
       setCartOpen(false);
@@ -1012,7 +1021,7 @@ export default function EtsyStyleHeader() {
         </Box>
       </Drawer>
 
-      {/* Cart Drawer (header cart, shows all localStorage items) */}
+      {/* Cart Drawer */}
       <Drawer anchor="right" open={cartOpen} onClose={() => setCartOpen(false)}>
         <Box
           sx={{
@@ -1414,7 +1423,7 @@ export default function EtsyStyleHeader() {
         </DialogActions>
       </Dialog>
 
-      {/* Inquiry Dialog – preview removed as requested */}
+      {/* Inquiry Dialog */}
       <Dialog
         open={inquiryDialogOpen}
         onClose={() => setInquiryDialogOpen(false)}
