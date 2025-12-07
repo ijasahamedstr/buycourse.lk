@@ -132,15 +132,11 @@ const Footer: React.FC = () => {
                   fontFamily: '"Montserrat", sans-serif',
                 }}
               >
-                Al Mubthadieen Trading & Contracting (MTC)
+               Galadari Hotel, 64 Lotus Rd, Colombo 01, Sri Lanka
                 <br />
-                P.O.BOX 23693,
+                P.O.BOX 05551,
                 <br />
-                Tel: +974 502260200,
-                <br />
-                Al Muntazah, Al Rawabi St, Doha,
-                <br />
-                Office Doha - Qatar
+                Tel: (+94) 76 708 0553,
               </Typography>
             </Box>
 
