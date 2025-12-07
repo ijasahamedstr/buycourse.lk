@@ -113,7 +113,7 @@ function removeItemById(id: string) {
 // Use exact fontFamily string requested
 const Montserrat = "'Montserrat', sans-serif";
 
-// Developer-provided preview image path (will be transformed to URL elsewhere)
+// Developer-provided preview image path (used as cart thumbnail fallback)
 const previewImg = "/mnt/data/sdwqdqwd.JPG";
 
 const SearchContainer = styled("div")(() => ({
@@ -397,7 +397,6 @@ export default function EtsyStyleHeader() {
       }
     }
 
-    // ✅ SAME PATTERN: API_HOST from env + error if missing
     const API_HOST = import.meta.env.VITE_API_HOST as string | undefined;
     if (!API_HOST) {
       setSnackbar({
@@ -547,7 +546,6 @@ export default function EtsyStyleHeader() {
       return;
     }
 
-    // ✅ SAME PATTERN HERE FOR /Odder
     const API_HOST = import.meta.env.VITE_API_HOST as string | undefined;
     if (!API_HOST) {
       setSnackbar({
@@ -1392,7 +1390,7 @@ export default function EtsyStyleHeader() {
         </DialogActions>
       </Dialog>
 
-      {/* Inquiry Dialog */}
+      {/* Inquiry Dialog (NO PREVIEW COLUMN) */}
       <Dialog
         open={inquiryDialogOpen}
         onClose={() => setInquiryDialogOpen(false)}
@@ -1405,144 +1403,100 @@ export default function EtsyStyleHeader() {
         </DialogTitle>
         <DialogContent>
           <Box
-            sx={{ display: "flex", gap: 2, mt: 1, fontFamily: Montserrat }}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              mt: 1,
+              fontFamily: Montserrat,
+            }}
           >
-            <Box
-              sx={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
-              }}
+            <TextField
+              label="Name"
+              value={inqName}
+              onChange={(e) => setInqName(e.target.value)}
+              error={!!inqErrors.name}
+              helperText={inqErrors.name}
+              fullWidth
+              autoFocus
+              InputLabelProps={{ sx: { fontFamily: Montserrat } }}
+              InputProps={{ sx: { fontFamily: Montserrat } }}
+              FormHelperTextProps={{ sx: { fontFamily: Montserrat } }}
+            />
+            <TextField
+              label="Mobile number (include country code)"
+              value={inqMobile}
+              onChange={(e) => setInqMobile(e.target.value)}
+              error={!!inqErrors.mobile}
+              helperText={inqErrors.mobile}
+              fullWidth
+              InputLabelProps={{ sx: { fontFamily: Montserrat } }}
+              InputProps={{ sx: { fontFamily: Montserrat } }}
+              FormHelperTextProps={{ sx: { fontFamily: Montserrat } }}
+            />
+            <FormControl
+              fullWidth
+              error={!!inqErrors.type}
+              sx={{ fontFamily: Montserrat }}
             >
-              <TextField
-                label="Name"
-                value={inqName}
-                onChange={(e) => setInqName(e.target.value)}
-                error={!!inqErrors.name}
-                helperText={inqErrors.name}
-                fullWidth
-                autoFocus
-                InputLabelProps={{ sx: { fontFamily: Montserrat } }}
-                InputProps={{ sx: { fontFamily: Montserrat } }}
-                FormHelperTextProps={{ sx: { fontFamily: Montserrat } }}
-              />
-              <TextField
-                label="Mobile number (include country code)"
-                value={inqMobile}
-                onChange={(e) => setInqMobile(e.target.value)}
-                error={!!inqErrors.mobile}
-                helperText={inqErrors.mobile}
-                fullWidth
-                InputLabelProps={{ sx: { fontFamily: Montserrat } }}
-                InputProps={{ sx: { fontFamily: Montserrat } }}
-                FormHelperTextProps={{ sx: { fontFamily: Montserrat } }}
-              />
-              <FormControl
-                fullWidth
-                error={!!inqErrors.type}
+              <InputLabel
+                id="inq-type-label"
                 sx={{ fontFamily: Montserrat }}
               >
-                <InputLabel
-                  id="inq-type-label"
+                Inquiry type
+              </InputLabel>
+              <Select
+                labelId="inq-type-label"
+                label="Inquiry type"
+                value={inqType}
+                onChange={(e) => setInqType(String(e.target.value))}
+                sx={{ fontFamily: Montserrat }}
+                inputProps={{ sx: { fontFamily: Montserrat } }}
+              >
+                <MenuItem
+                  value={"Product question"}
                   sx={{ fontFamily: Montserrat }}
                 >
-                  Inquiry type
-                </InputLabel>
-                <Select
-                  labelId="inq-type-label"
-                  label="Inquiry type"
-                  value={inqType}
-                  onChange={(e) => setInqType(String(e.target.value))}
+                  Product question
+                </MenuItem>
+                <MenuItem
+                  value={"Order issue"}
                   sx={{ fontFamily: Montserrat }}
-                  inputProps={{ sx: { fontFamily: Montserrat } }}
                 >
-                  <MenuItem
-                    value={"Product question"}
-                    sx={{ fontFamily: Montserrat }}
-                  >
-                    Product question
-                  </MenuItem>
-                  <MenuItem
-                    value={"Order issue"}
-                    sx={{ fontFamily: Montserrat }}
-                  >
-                    Order issue
-                  </MenuItem>
-                  <MenuItem
-                    value={"Refund / Return"}
-                    sx={{ fontFamily: Montserrat }}
-                  >
-                    Refund / Return
-                  </MenuItem>
-                  <MenuItem value={"Other"} sx={{ fontFamily: Montserrat }}>
-                    Other
-                  </MenuItem>
-                </Select>
-                {inqErrors.type && (
-                  <FormHelperText sx={{ fontFamily: Montserrat }}>
-                    {inqErrors.type}
-                  </FormHelperText>
-                )}
-              </FormControl>
+                  Order issue
+                </MenuItem>
+                <MenuItem
+                  value={"Refund / Return"}
+                  sx={{ fontFamily: Montserrat }}
+                >
+                  Refund / Return
+                </MenuItem>
+                <MenuItem value={"Other"} sx={{ fontFamily: Montserrat }}>
+                  Other
+                </MenuItem>
+              </Select>
+              {inqErrors.type && (
+                <FormHelperText sx={{ fontFamily: Montserrat }}>
+                  {inqErrors.type}
+                </FormHelperText>
+              )}
+            </FormControl>
 
-              <TextField
-                label="Description"
-                value={inqDescription}
-                onChange={(e) => setInqDescription(e.target.value)}
-                error={!!inqErrors.description}
-                helperText={
-                  inqErrors.description || "Give as much detail as needed"
-                }
-                multiline
-                rows={4}
-                fullWidth
-                InputLabelProps={{ sx: { fontFamily: Montserrat } }}
-                InputProps={{ sx: { fontFamily: Montserrat } }}
-                FormHelperTextProps={{ sx: { fontFamily: Montserrat } }}
-              />
-            </Box>
-
-            <Box
-              sx={{
-                width: 140,
-                display: "flex",
-                flexDirection: "column",
-                gap: 1,
-              }}
-            >
-              <Box
-                sx={{
-                  fontFamily: Montserrat,
-                  fontSize: "0.85rem",
-                  color: "#333",
-                  fontWeight: 600,
-                }}
-              >
-                Preview
-              </Box>
-              <Box
-                component="img"
-                src={previewImg}
-                alt="Preview"
-                sx={{
-                  width: "100%",
-                  height: 140,
-                  objectFit: "cover",
-                  borderRadius: 1,
-                  border: "1px solid rgba(0,0,0,0.06)",
-                }}
-              />
-              <Typography
-                sx={{
-                  fontSize: "0.75rem",
-                  color: "#666",
-                  fontFamily: Montserrat,
-                }}
-              >
-                Message will be sent in the format shown (no order fields).
-              </Typography>
-            </Box>
+            <TextField
+              label="Description"
+              value={inqDescription}
+              onChange={(e) => setInqDescription(e.target.value)}
+              error={!!inqErrors.description}
+              helperText={
+                inqErrors.description || "Give as much detail as needed"
+              }
+              multiline
+              rows={4}
+              fullWidth
+              InputLabelProps={{ sx: { fontFamily: Montserrat } }}
+              InputProps={{ sx: { fontFamily: Montserrat } }}
+              FormHelperTextProps={{ sx: { fontFamily: Montserrat } }}
+            />
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
