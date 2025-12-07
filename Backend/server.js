@@ -27,7 +27,8 @@ app.use(
       "https://buycourse-lk-umlb.vercel.app"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
