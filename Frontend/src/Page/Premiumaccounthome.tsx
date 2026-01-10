@@ -2,12 +2,12 @@
 import React, { useEffect, useState } from "react";
 import { Box, Container, Typography, Button, CircularProgress } from "@mui/material";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Pagination } from "swiper/modules";
+import { Autoplay } from "swiper/modules"; // 1. Removed Pagination import
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 import "swiper/css";
-import "swiper/css/pagination";
+// import "swiper/css/pagination"; // 2. Can optionally comment this out
 
 type PlanHeading = {
   planDurations?: string;
@@ -112,7 +112,7 @@ const Premiumaccounthome: React.FC = () => {
           const Rellax = mod?.default || mod;
           rellaxInstance = new Rellax(".rellax", { speed: -2 });
         } catch (err) {
-          // noop if rellax isn't installed
+          // noop
         }
       })();
     }
@@ -159,44 +159,26 @@ const Premiumaccounthome: React.FC = () => {
             item.summary ??
             "";
 
-          // price & discounted price
-          const discountedPrice =
-            item.discountedPrice ?? item.offerPrice ?? undefined;
-          const price =
-            item.price ??
-            item.Price ??
-            item.coursePrice ??
-            undefined;
+          const discountedPrice = item.discountedPrice ?? item.offerPrice ?? undefined;
+          const price = item.price ?? item.Price ?? item.coursePrice ?? undefined;
 
-          // images: can be array of strings or objects
           let image = "";
           if (Array.isArray(item.images) && item.images.length > 0) {
             const first = item.images[0];
             image = first?.url ?? first?.src ?? first ?? "";
           } else {
-            image =
-              item.courseImage ??
-              item.image ??
-              item.imageUrl ??
-              item.image_url ??
-              item.photo ??
-              "";
+            image = item.courseImage ?? item.image ?? item.imageUrl ?? item.image_url ?? item.photo ?? "";
           }
 
-          // accessLicenseTypes: string[] or CSV
           let accessLicenseTypes: string[] = [];
           if (Array.isArray(item.accessLicenseTypes)) {
             accessLicenseTypes = item.accessLicenseTypes;
           } else if (typeof item.accessLicenseTypes === "string") {
-            accessLicenseTypes = item.accessLicenseTypes
-              .split(",")
-              .map((s: string) => s.trim())
-              .filter(Boolean);
+            accessLicenseTypes = item.accessLicenseTypes.split(",").map((s: string) => s.trim()).filter(Boolean);
           }
 
           const videoQuality: string | undefined = item.videoQuality ?? undefined;
 
-          // mainHeadings: [{ planDurations, Price }]
           const mainHeadings: PlanHeading[] = Array.isArray(item.mainHeadings)
             ? item.mainHeadings.map((p: any) => ({
                 planDurations: p.planDurations ?? p.duration ?? p.planDuration,
@@ -204,28 +186,22 @@ const Premiumaccounthome: React.FC = () => {
               }))
             : [];
 
-          const category: string =
-            item.category ??
-            item.serviceCategory ??
-            "OTT";
-
-          const stock: number | undefined =
-            typeof item.stock === "number" ? item.stock : undefined;
+          const category: string = item.category ?? item.serviceCategory ?? "OTT";
+          const stock: number | undefined = typeof item.stock === "number" ? item.stock : undefined;
 
           return {
             id,
             title,
             price,
             discountedPrice,
-            duration: undefined, // not used in OTT, but kept for compatibility
+            duration: undefined,
             image: image || "",
             description,
             category,
             demoVideo: item.coursedemovideolink ?? item.demo ?? item.demoLink,
             mainHeadings,
             instructor: item.instructor ?? item.tutor ?? item.teacher ?? "TBA",
-            coursedemovideolink:
-              item.coursedemovideolink ?? item.demo ?? item.demoLink,
+            coursedemovideolink: item.coursedemovideolink ?? item.demo ?? item.demoLink,
             date: item.date ?? "",
             accessLicenseTypes,
             videoQuality,
@@ -241,7 +217,6 @@ const Premiumaccounthome: React.FC = () => {
           setCourses(valid);
         }
       } catch (err: any) {
-        console.error("Error fetching courses:", err);
         setError("Unable to fetch OTT services from server. Showing default courses.");
         setCourses(FALLBACK_COURSES);
       } finally {
@@ -257,7 +232,6 @@ const Premiumaccounthome: React.FC = () => {
     };
   }, []);
 
-  // 🔁 UPDATED: navigate to /service/:slug
   const handleSlideClick = (course: Course) => {
     const slug = slugify(course.id || course.title);
     navigate(`/service/${slug}`);
@@ -310,15 +284,15 @@ const Premiumaccounthome: React.FC = () => {
             spaceBetween={20}
             slidesPerView={1.05}
             autoplay={{ delay: 3000, disableOnInteraction: false }}
-            pagination={{ clickable: true }}
+            /* ❌ Removed pagination={{ clickable: true }} */
             loop={true}
             breakpoints={{
               600: { slidesPerView: 2 },
               900: { slidesPerView: 3 },
               1200: { slidesPerView: 4 },
             }}
-            modules={[Autoplay, Pagination]}
-            style={{ paddingBottom: "30px" }}
+            modules={[Autoplay]} /* ❌ Removed Pagination from modules */
+            style={{ paddingBottom: "10px" }} // Reduced padding since bullets are gone
           >
             {list.map((course) => (
               <SwiperSlide key={course.id}>
@@ -414,7 +388,6 @@ const Premiumaccounthome: React.FC = () => {
                         {truncate(course.description, 90)}
                       </Typography>
 
-                      {/* price + discounted price */}
                       <Typography
                         variant="body2"
                         sx={{
@@ -495,7 +468,6 @@ const Premiumaccounthome: React.FC = () => {
                         {truncate(course.description, 110)}
                       </Typography>
 
-                      {/* Plan durations & prices (first 2 plans) */}
                       {course.mainHeadings && course.mainHeadings.length > 0 && (
                         <Box sx={{ mt: 1.5 }}>
                           {course.mainHeadings.slice(0, 2).map((plan, idx) => (
@@ -530,7 +502,6 @@ const Premiumaccounthome: React.FC = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           const slug = slugify(course.id || course.title);
-                          // 🔁 UPDATED: View button goes to /service/:slug
                           navigate(`/service/${slug}`);
                         }}
                         sx={{
@@ -615,19 +586,10 @@ const Premiumaccounthome: React.FC = () => {
           </Box>
         ) : (
           <>
-            {error ? (
+            {error || dbEmpty ? (
               <Box sx={{ textAlign: "center", mb: 3 }}>
-                <Typography variant="body1" color="error" sx={{ mb: 1 }}>
-                  {error}
-                </Typography>
-                <Button onClick={() => navigate("/premium-account-service")} variant="outlined">
-                  View all OTT services
-                </Button>
-              </Box>
-            ) : dbEmpty ? (
-              <Box sx={{ textAlign: "center", mb: 3 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  No OTT services found in the database — showing default courses.
+                <Typography variant="body1" color={error ? "error" : "text.secondary"} sx={{ mb: 1 }}>
+                  {error || "No OTT services found in the database — showing default courses."}
                 </Typography>
                 <Button onClick={() => navigate("/premium-account-service")} variant="outlined">
                   View all OTT services
@@ -635,7 +597,6 @@ const Premiumaccounthome: React.FC = () => {
               </Box>
             ) : null}
 
-            {/* ✅ Single slider showing ALL Ottservice items */}
             {renderSection("All OTT Services", courses, "/premium-account-service")}
           </>
         )}

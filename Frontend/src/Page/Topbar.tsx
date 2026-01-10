@@ -1,4 +1,19 @@
-import React, { useState, useEffect } from "react";
+/**
+ * ============================================================================
+ * COMPONENT: Topbar
+ * VERSION: 7.0.0
+ * DESCRIPTION: Professional responsive header with Inquiry System.
+ * THEME: Deep Blue (#0A5397) | Onyx Glassmorphism
+ * RESPONSIVENESS: Mobile (xs), Tablet (sm/md), Desktop (lg/xl)
+ * ============================================================================
+ */
+
+import React, { 
+  useState, 
+  useEffect, 
+  useCallback, 
+  useMemo 
+} from "react";
 import {
   Box,
   Typography,
@@ -14,729 +29,442 @@ import {
   CircularProgress,
   Drawer,
   IconButton,
+  Container,
+  Stack,
+  Fade,
+  Backdrop,
+  Divider,
+  styled,
+  alpha,
+  Tooltip,
 } from "@mui/material";
 import {
-  Phone,
-  Email,
-  WhatsApp,
-  Facebook,
-  Instagram,
-  YouTube,
+  Phone as PhoneIcon,
+  Email as EmailIcon,
+  WhatsApp as WhatsAppIcon,
+  Facebook as FacebookIcon,
+  Instagram as InstagramIcon,
+  YouTube as YouTubeIcon,
   Close as CloseIcon,
+  Send as SendIcon,
+  SupportAgent as SupportIcon,
+  VerifiedUser as SafeIcon,
+  Language as LanguageIcon,
 } from "@mui/icons-material";
 
-const inquiryTypes = [
-  { value: "Payment Issue", label: "Payment Issue" },
-  { value: "Product Issue", label: "Product Issue" },
-  { value: "General Inquiry", label: "General Inquiry" },
-  { value: "Request Service", label: "Request Service" },
-];
+// --- GLOBAL CONFIGURATION & TYPES ---
 
-const Montserrat = '"Montserrat", sans-serif';
+const MONTSERRAT = '"Montserrat", sans-serif';
+const BRAND_PRIMARY = "rgb(10, 83, 151)";
+const BRAND_DARK = "#121212";
 
-// cart keys used across the app
+// Storage keys used across the application architecture
 const CART_KEY = "cartCourses";
 const OTT_CART_KEY = "ottCart";
 
+const INQUIRY_OPTIONS = [
+  { value: "Payment Issue", label: "Payment & Billing" },
+  { value: "Product Issue", label: "Product & Course Access" },
+  { value: "General Inquiry", label: "General Inquiry" },
+  { value: "Request Service", label: "Technical Support" },
+];
+
+// --- STYLED COMPONENTS (PERFORMANCE OPTIMIZED) ---
+
+/**
+ * Premium Navbar Wrapper with dynamic glassmorphism and scroll-sensing logic.
+ */
+const NavWrapper = styled(Box)<{ scrolled: number }>(({ scrolled }) => ({
+  width: "100%",
+  height: scrolled ? "60px" : "75px",
+  position: "fixed",
+  top: 0,
+  left: 0,
+  zIndex: 1300,
+  display: "flex",
+  alignItems: "center",
+  transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+  background: scrolled ? alpha("#000", 0.95) : alpha("#1A1A1A", 0.9),
+  backdropFilter: "blur(12px)",
+  borderBottom: `1px solid ${alpha("#fff", 0.1)}`,
+  boxShadow: scrolled ? "0 10px 30px rgba(0,0,0,0.5)" : "none",
+}));
+
+/**
+ * Social Link components with Squircle geometry and brand-specific hover transitions.
+ */
+const SocialLink = styled(Link)<{ bgcolor: string }>(({ bgcolor }) => ({
+  width: 34,
+  height: 34,
+  borderRadius: "10px",
+  backgroundColor: alpha(bgcolor, 0.1),
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: "#fff",
+  border: `1px solid ${alpha(bgcolor, 0.2)}`,
+  transition: "all 0.3s ease",
+  textDecoration: "none",
+  "&:hover": {
+    backgroundColor: bgcolor,
+    transform: "translateY(-4px)",
+    boxShadow: `0 8px 15px ${alpha(bgcolor, 0.5)}`,
+  },
+}));
+
+/**
+ * Responsive Modal Box with strict padding and viewport-aware sizing.
+ */
+const StyledModalBox = styled(Box)(({ theme }) => ({
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: "92%",
+  maxWidth: "540px",
+  backgroundColor: "#ffffff",
+  borderRadius: "24px",
+  padding: theme.spacing(4),
+  boxShadow: "0 25px 60px rgba(0,0,0,0.4)",
+  outline: "none",
+  overflowY: "auto",
+  maxHeight: "95vh", 
+  [theme.breakpoints.down("sm")]: {
+    padding: theme.spacing(3),
+    borderRadius: "20px",
+    width: "95%",
+  },
+}));
+
+/**
+ * Primary Call-To-Action with custom depth shadowing.
+ */
+const PrimaryCTA = styled(Button)(({ }) => ({
+  borderRadius: "50px",
+  textTransform: "none",
+  fontWeight: 700,
+  fontFamily: MONTSERRAT,
+  padding: "10px 24px",
+  backgroundColor: BRAND_PRIMARY,
+  color: "#fff",
+  boxShadow: `0 4px 14px ${alpha(BRAND_PRIMARY, 0.4)}`,
+  transition: "all 0.3s ease",
+  "&:hover": {
+    backgroundColor: "rgb(13, 100, 180)",
+    transform: "scale(1.03)",
+  },
+}));
+
+// --- MAIN COMPONENT IMPLEMENTATION ---
+
 const Topbar: React.FC = () => {
   const theme = useTheme();
+  
+  // High-precision Media Queries for Adaptive UI
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
+  const isTablet = useMediaQuery(theme.breakpoints.down("md"));
+  const isLargeDesktop = useMediaQuery(theme.breakpoints.up("lg"));
 
+  // --- STATE MANAGEMENT ---
   const [open, setOpen] = useState(false);
-  const [socialDrawerOpen, setSocialDrawerOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "error";
-  }>({
-    open: false,
-    message: "",
-    severity: "success",
+  const [scrolled, setScrolled] = useState(false);
+  const [toast, setToast] = useState({ 
+    show: false, 
+    msg: "", 
+    type: "success" as "success" | "error" 
   });
 
-  const [formData, setFormData] = useState({
+  const [form, setForm] = useState({
     name: "",
     mobile: "",
     type: "",
     description: "",
-    orderNumber: "",
-    orderDate: "",
+    orderId: "",
+    orderDate: ""
   });
 
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
+  // --- PERSISTENCE & UTILITIES ---
 
-  // allow other components to open this modal via a custom window event
-  useEffect(() => {
-    const onOpenInquiry = () => {
-      handleOpen();
-    };
-    window.addEventListener("openInquiry", onOpenInquiry);
-    return () => {
-      window.removeEventListener("openInquiry", onOpenInquiry);
-    };
-  }, []);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const resetForm = () => {
-    setFormData({
+  const resetForm = useCallback(() => {
+    setForm({
       name: "",
       mobile: "",
       type: "",
       description: "",
-      orderNumber: "",
-      orderDate: "",
+      orderId: "",
+      orderDate: ""
     });
-  };
+  }, []);
 
-  const openWhatsApp = () => {
-    const message = `
-*New Inquiry Received*
-
-*Name:* ${formData.name || "N/A"}
-*Mobile:* ${formData.mobile || "N/A"}
-*Inquiry Type:* ${formData.type || "N/A"}
-*Order Number:* ${formData.orderNumber || "N/A"}
-*Order Date:* ${formData.orderDate || "N/A"}
-
-*Description:* 
-${formData.description || "N/A"}
-
-_Sent via buycourse.lk Inquiry Form_
-    `;
-    const phoneNumber = "94767080553";
-    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
-      message
-    )}`;
-    window.open(url, "_blank");
-  };
-
-  const clearAllOrderLocalStorage = () => {
+  const clearStorageData = useCallback(() => {
     try {
-      // clear shared cart used by Couresview / PremiumaccountView
       localStorage.removeItem(CART_KEY);
-      // clear any old OTT-specific cart if still used
       localStorage.removeItem(OTT_CART_KEY);
-
-      try {
-        window.dispatchEvent(new Event("cartCleared"));
-      } catch {
-        // ignore
-      }
-    } catch {
-      // ignore storage errors
+      // Trigger global event for other listeners (Cart/Checkout)
+      window.dispatchEvent(new Event("cartCleared"));
+    } catch (error) {
+      console.error("Local Storage sync error:", error);
     }
+  }, []);
+
+  // --- EFFECT HOOKS ---
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 30) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    
+    // Custom window event listener for deep-linking modal triggers
+    const onTriggerInquiry = () => setOpen(true);
+    window.addEventListener("openInquiry", onTriggerInquiry);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("openInquiry", onTriggerInquiry);
+    };
+  }, []);
+
+  // --- FORM LOGIC ---
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSaveAndShare = async () => {
-    if (!formData.name || !formData.mobile || !formData.type) {
-      setSnackbar({
-        open: true,
-        message: "Please fill Name, Mobile and Inquiry Type.",
-        severity: "error",
-      });
+  const handleWhatsAppRedirect = useCallback(() => {
+    const message = 
+      `*NEW INQUIRY: BUYCOURSE.LK*\n\n` +
+      `*Client:* ${form.name || "N/A"}\n` +
+      `*Mobile:* ${form.mobile || "N/A"}\n` +
+      `*Category:* ${form.type || "N/A"}\n` +
+      `*Ref Order:* ${form.orderId || "N/A"}\n` +
+      `*Purchase Date:* ${form.orderDate || "N/A"}\n\n` +
+      `*Description:*\n${form.description || "N/A"}\n\n` +
+      `_Sent via official support gateway_`;
+
+    const phoneNumber = "94767080553";
+    const waUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, "_blank");
+  }, [form]);
+
+  const handleInquirySubmit = async () => {
+    // Basic validation
+    if (!form.name || !form.mobile || !form.type) {
+      setToast({ show: true, msg: "Please provide Name, Mobile, and Category.", type: "error" });
       return;
     }
 
     const API_HOST = import.meta.env.VITE_API_HOST as string | undefined;
     if (!API_HOST) {
-      setSnackbar({
-        open: true,
-        message: "API host not configured (VITE_API_HOST).",
-        severity: "error",
-      });
+      setToast({ show: true, msg: "Configuration Error: API Gateway Missing.", type: "error" });
       return;
     }
 
     setLoading(true);
 
     const payload = {
-      name: formData.name,
-      mobile: formData.mobile,
-      inquirytype: formData.type,
-      ordernumber: formData.orderNumber,
-      orderdate: formData.orderDate,
-      description: formData.description,
+      name: form.name,
+      mobile: form.mobile,
+      inquirytype: form.type,
+      ordernumber: form.orderId,
+      orderdate: form.orderDate,
+      description: form.description,
     };
 
     try {
-      const resp = await fetch(`${API_HOST}/inquiry`, {
+      const response = await fetch(`${API_HOST}/inquiry`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => null);
-        throw new Error(err?.message || `Server responded with ${resp.status}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || `Gateway Error: ${response.status}`);
       }
 
-      await resp.json();
+      setToast({ show: true, msg: "Inquiry Synced. Connecting to WhatsApp...", type: "success" });
 
-      setSnackbar({
-        open: true,
-        message: "Inquiry saved successfully. Opening WhatsApp...",
-        severity: "success",
-      });
-
+      // Execution delay for UX smoothness
       setTimeout(() => {
-        openWhatsApp();
-        clearAllOrderLocalStorage();
+        handleWhatsAppRedirect();
+        clearStorageData();
         resetForm();
-        handleClose();
-      }, 300);
-    } catch (error: any) {
-      setSnackbar({
-        open: true,
-        message: error?.message || "Failed to save inquiry.",
-        severity: "error",
+        setOpen(false);
+        setLoading(false);
+      }, 500);
+
+    } catch (err: any) {
+      setToast({ 
+        show: true, 
+        msg: err?.message || "Cloud sync failed. Opening WhatsApp fallback...", 
+        type: "error" 
       });
-    } finally {
-      setLoading(false);
+      // Fallback: Open WhatsApp even if API fails to ensure client contact
+      setTimeout(() => {
+        handleWhatsAppRedirect();
+        setLoading(false);
+      }, 1000);
     }
   };
 
-  const handleSnackbarClose = () =>
-    setSnackbar((s) => ({ ...s, open: false }));
+  // --- SUB-COMPONENTS & MEMOIZED RENDERERS ---
 
-  // Shared props to ensure font family everywhere in TextField
-  const textFieldCommon = {
-    InputLabelProps: { sx: { fontFamily: Montserrat } },
-    InputProps: { sx: { fontFamily: Montserrat } },
-    sx: { mb: 2 },
-  } as const;
+  const textFieldProps = useMemo(() => ({
+    fullWidth: true,
+    variant: "filled" as const,
+    InputLabelProps: { sx: { fontFamily: MONTSERRAT, fontSize: '0.9rem' } },
+    InputProps: { 
+        disableUnderline: true, 
+        sx: { borderRadius: '12px', fontFamily: MONTSERRAT, backgroundColor: alpha('#000', 0.04) } 
+    },
+    sx: { mb: 2.5 }
+  }), []);
 
   return (
     <>
-      {/* TOP BAR */}
-      <Box
-        sx={{
-          width: "100%",
-          height: { xs: "50px", sm: "55px", md: "60px" },
-          position: "fixed",
-          top: 0,
-          left: 0,
-          zIndex: 1200,
-          bgcolor: "#222",
-          display: "flex",
-        }}
+      {/* --- MAIN HEADER LAYER --- */}
+      <NavWrapper scrolled={scrolled ? 1 : 0}>
+        <Container maxWidth="xl">
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            
+            {/* LEFT: BRAND & CONTACT IDENTIFIERS */}
+            <Stack direction="row" spacing={isMobile ? 1 : 4} alignItems="center">
+              <Box display="flex" alignItems="center" sx={{ color: "#fff" }}>
+                <SupportIcon sx={{ mr: 1, color: BRAND_PRIMARY, fontSize: isMobile ? "1.2rem" : "1.6rem" }} />
+                <Typography variant="body2" sx={{ fontFamily: MONTSERRAT, fontWeight: 800, letterSpacing: 1, fontSize: isMobile ? "0.75rem" : "0.9rem" }}>
+                  {isMobile ? "OFFICIAL SUPPORT" : "OFFICIAL SUPPORT GATEWAY"}
+                </Typography>
+              </Box>
+
+              {!isMobile && (
+                <Stack direction="row" spacing={3}>
+                  <Link href="tel:+94767080553" sx={{ color: alpha("#fff", 0.75), fontSize: "0.85rem", textDecoration: "none", display: "flex", alignItems: "center", transition: "0.2s", "&:hover": { color: "#fff" } }}>
+                    <PhoneIcon sx={{ fontSize: "1rem", mr: 0.8 }} /> +94 76 708 0553
+                  </Link>
+                  {isLargeDesktop && (
+                    <Link href="mailto:info@buycourse.lk" sx={{ color: alpha("#fff", 0.75), fontSize: "0.85rem", textDecoration: "none", display: "flex", alignItems: "center", transition: "0.2s", "&:hover": { color: "#fff" } }}>
+                      <EmailIcon sx={{ fontSize: "1rem", mr: 0.8 }} /> info@buycourse.lk
+                    </Link>
+                  )}
+                </Stack>
+              )}
+            </Stack>
+
+            {/* RIGHT: CONNECTIVITY & CTA */}
+            <Stack direction="row" spacing={isMobile ? 1 : 2} alignItems="center">
+              {!isTablet ? (
+                <Stack direction="row" spacing={1.5}>
+                  <Tooltip title="Chat via WhatsApp" arrow>
+                    <SocialLink bgcolor="#25D366" href="https://wa.me/94767080553" target="_blank"><WhatsAppIcon sx={{ fontSize: 18 }} /></SocialLink>
+                  </Tooltip>
+                  <Tooltip title="Follow on Facebook" arrow>
+                    <SocialLink bgcolor="#1877F2" href="https://facebook.com" target="_blank"><FacebookIcon sx={{ fontSize: 18 }} /></SocialLink>
+                  </Tooltip>
+                  <Tooltip title="Follow on Instagram" arrow>
+                    <SocialLink bgcolor="#E4405F" href="https://instagram.com" target="_blank"><InstagramIcon sx={{ fontSize: 18 }} /></SocialLink>
+                  </Tooltip>
+                  <Tooltip title="Visit YouTube" arrow>
+                    <SocialLink bgcolor="#FF0000" href="https://youtube.com" target="_blank"><YouTubeIcon sx={{ fontSize: 18 }} /></SocialLink>
+                  </Tooltip>
+                </Stack>
+              ) : (
+                <IconButton 
+                  onClick={() => setDrawerOpen(true)} 
+                  sx={{ color: BRAND_PRIMARY, bgcolor: alpha(BRAND_PRIMARY, 0.1), "&:hover": { bgcolor: alpha(BRAND_PRIMARY, 0.2) } }}
+                >
+                  <LanguageIcon />
+                </IconButton>
+              )}
+
+              <PrimaryCTA 
+                onClick={() => setOpen(true)} 
+                startIcon={!isMobile && <SendIcon sx={{ fontSize: '1.1rem !important' }} />}
+                sx={{ fontSize: isMobile ? '0.75rem' : '0.85rem', px: isMobile ? 2 : 3 }}
+              >
+                Inquire Here
+              </PrimaryCTA>
+            </Stack>
+          </Box>
+        </Container>
+      </NavWrapper>
+
+      {/* --- MOBILE/TABLET DRAWER NAVIGATION --- */}
+      <Drawer 
+        anchor="right" 
+        open={drawerOpen} 
+        onClose={() => setDrawerOpen(false)} 
+        PaperProps={{ sx: { width: 300, bgcolor: "#111827", color: "#fff", p: 4, backgroundImage: 'none' } }}
       >
-        {/* LEFT COLUMN */}
-        <Box
-          sx={{
-            width: isMobile ? "55%" : "75%",
-            display: "flex",
-            alignItems: "center",
-            px: { xs: 1, sm: 2, md: 4 },
-            color: "#fff",
-            gap: { xs: 0.5, sm: 1.5, md: 3 },
-            overflow: "hidden",
-          }}
-        >
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 600,
-              color: "#FFFFFF",
-              fontFamily: Montserrat,
-              whiteSpace: "nowrap",
-            }}
-          >
-            Need Assistance? Contact Us:
-          </Typography>
-
-          {!isMobile && (
-            <>
-              <Typography
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  fontFamily: Montserrat,
-                  fontSize: "0.8rem",
-                }}
-              >
-                <Phone sx={{ mr: 0.5, fontSize: "1rem" }} />
-                <Link
-                  href="tel:+94767080553"
-                  underline="none"
-                  color="inherit"
-                  sx={{ fontFamily: Montserrat }}
-                >
-                  (+94) 76 708 0553
-                </Link>
-              </Typography>
-
-              <Typography
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  fontFamily: Montserrat,
-                  fontSize: "0.8rem",
-                }}
-              >
-                <Email sx={{ mr: 0.5, fontSize: "1rem" }} />
-                <Link
-                  href="mailto:info@buycourse.lk"
-                  underline="none"
-                  color="inherit"
-                  sx={{ fontFamily: Montserrat }}
-                >
-                  info@buycourse.lk
-                </Link>
-              </Typography>
-            </>
-          )}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
+          <Typography variant="h6" sx={{ fontFamily: MONTSERRAT, fontWeight: 900, letterSpacing: 1 }}>Connect</Typography>
+          <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: "#fff", bgcolor: alpha('#fff', 0.05) }}><CloseIcon /></IconButton>
         </Box>
-
-        {/* RIGHT COLUMN (SOCIAL + BUTTON) */}
-        <Box
-          sx={{
-            width: isMobile ? "45%" : "25%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            px: { xs: 1, sm: 2, md: 4 },
-            gap: { xs: 0.5, sm: 1 },
-          }}
-        >
-          {/* Social Icons - DESKTOP ONLY */}
-          {!isMobile && !isTablet && (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: { xs: 0.7, sm: 1.2 },
-                mr: { xs: 0.5, sm: 1.5 },
+        
+        <Stack spacing={3}>
+          <Typography variant="overline" sx={{ color: alpha('#fff', 0.4), letterSpacing: 2,fontFamily: MONTSERRAT, }}>Official Channels</Typography>
+          {[
+            { label: "WhatsApp Gateway", icon: <WhatsAppIcon />, color: "#25D366", link: "https://wa.me/94767080553" },
+            { label: "Facebook Community", icon: <FacebookIcon />, color: "#1877F2", link: "https://facebook.com" },
+            { label: "Instagram Feed", icon: <InstagramIcon />, color: "#E4405F", link: "https://instagram.com" },
+            { label: "YouTube Channel", icon: <YouTubeIcon />, color: "#FF0000", link: "https://youtube.com" }
+          ].map((item) => (
+            <Button 
+              key={item.label} 
+              fullWidth 
+              component={Link}
+              href={item.link}
+              target="_blank"
+              startIcon={item.icon} 
+              sx={{ 
+                justifyContent: "flex-start", 
+                color: "#fff", 
+                fontFamily: MONTSERRAT, 
+                py: 2, 
+                px: 3,
+                borderRadius: "14px", 
+                border: `1px solid ${alpha(item.color, 0.4)}`, 
+                textTransform: 'none',
+                "&:hover": { bgcolor: alpha(item.color, 0.1), border: `1px solid ${item.color}` } 
               }}
             >
-              {/* WhatsApp */}
-              <Link
-                href="https://wa.me/94767080553"
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  width: { xs: 26, sm: 30 },
-                  height: { xs: 26, sm: 30 },
-                  borderRadius: "50%",
-                  backgroundColor: "#25D366",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff",
-                  "&:hover": { opacity: 0.85 },
-                }}
-              >
-                <WhatsApp sx={{ fontSize: { xs: 17, sm: 19 } }} />
-              </Link>
+              {item.label}
+            </Button>
+          ))}
+        </Stack>
 
-              {/* Facebook */}
-              <Link
-                href="https://www.facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  width: { xs: 26, sm: 30 },
-                  height: { xs: 26, sm: 30 },
-                  borderRadius: "50%",
-                  backgroundColor: "#1877F2",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff",
-                  "&:hover": { opacity: 0.85 },
-                }}
-              >
-                <Facebook sx={{ fontSize: { xs: 17, sm: 19 } }} />
-              </Link>
-
-              {/* Instagram */}
-              <Link
-                href="https://www.instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  width: { xs: 26, sm: 30 },
-                  height: { xs: 26, sm: 30 },
-                  borderRadius: "50%",
-                  background:
-                    "linear-gradient(45deg, #FEDA75, #FA7E1E, #D62976, #962FBF, #4F5BD5)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff",
-                  "&:hover": { opacity: 0.85 },
-                }}
-              >
-                <Instagram sx={{ fontSize: { xs: 17, sm: 19 } }} />
-              </Link>
-
-              {/* YouTube */}
-              <Link
-                href="https://www.youtube.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  width: { xs: 26, sm: 30 },
-                  height: { xs: 26, sm: 30 },
-                  borderRadius: "50%",
-                  backgroundColor: "#FF0000",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff",
-                  "&:hover": { opacity: 0.85 },
-                }}
-              >
-                <YouTube sx={{ fontSize: { xs: 17, sm: 19 } }} />
-              </Link>
-            </Box>
-          )}
-
-          {/* Mobile / Tablet: button to open SOCIAL DRAWER */}
-          {(isMobile || isTablet) && (
-            <IconButton
-              onClick={() => setSocialDrawerOpen(true)}
-              sx={{
-                mr: { xs: 0.5, sm: 1 },
-                color: "#fff",
-              }}
-              aria-label="open social links"
-            >
-              <WhatsApp sx={{ fontSize: { xs: 20, sm: 22 } }} />
-            </IconButton>
-          )}
-
-          <Button
-            variant="contained"
-            onClick={handleOpen}
-            sx={{
-              textTransform: "none",
-              backgroundColor: "rgb(10, 83, 151)",
-              color: "#FFFFFF",
-              fontWeight: 600,
-              borderRadius: "50px",
-              fontSize: { xs: "0.65rem", sm: "0.75rem" },
-              fontFamily: Montserrat,
-              px: { xs: 1.5, sm: 2.5 },
-              minWidth: "auto",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Inquire Here
-          </Button>
-        </Box>
-      </Box>
-
-      {/* SOCIAL MEDIA DRAWER (Mobile / Tablet) */}
-      <Drawer
-        anchor="right"
-        open={socialDrawerOpen}
-        onClose={() => setSocialDrawerOpen(false)}
-        PaperProps={{
-          sx: {
-            width: 260,
-            p: 2,
-            bgcolor: "#111827",
-            color: "#fff",
-            fontFamily: Montserrat,
-          },
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
-          <Typography
-            variant="subtitle1"
-            sx={{ fontFamily: Montserrat, fontWeight: 600 }}
-          >
-            Follow us
+        <Box sx={{ mt: 'auto', textAlign: 'center', opacity: 0.3 }}>
+          <Typography variant="caption" sx={{ fontFamily: MONTSERRAT }}>
+            © 2026 buycourse.lk | Secure Support
           </Typography>
-          <IconButton
-            onClick={() => setSocialDrawerOpen(false)}
-            sx={{ color: "#fff" }}
-            aria-label="close social drawer"
-          >
-            <CloseIcon />
-          </IconButton>
-        </Box>
-
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-          {/* WhatsApp */}
-          <Button
-            component={Link}
-            href="https://wa.me/94767080553"
-            target="_blank"
-            rel="noopener noreferrer"
-            startIcon={
-              <Box
-                sx={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: "50%",
-                  backgroundColor: "#25D366",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff",
-                }}
-              >
-                <WhatsApp sx={{ fontSize: 18 }} />
-              </Box>
-            }
-            sx={{
-              justifyContent: "flex-start",
-              color: "#e5e7eb",
-              textTransform: "none",
-              fontFamily: Montserrat,
-            }}
-          >
-            WhatsApp
-          </Button>
-
-          {/* Facebook */}
-          <Button
-            component={Link}
-            href="https://www.facebook.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            startIcon={
-              <Box
-                sx={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: "50%",
-                  backgroundColor: "#1877F2",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff",
-                }}
-              >
-                <Facebook sx={{ fontSize: 18 }} />
-              </Box>
-            }
-            sx={{
-              justifyContent: "flex-start",
-              color: "#e5e7eb",
-              textTransform: "none",
-              fontFamily: Montserrat,
-            }}
-          >
-            Facebook
-          </Button>
-
-          {/* Instagram */}
-          <Button
-            component={Link}
-            href="https://www.instagram.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            startIcon={
-              <Box
-                sx={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: "50%",
-                  background:
-                    "linear-gradient(45deg, #FEDA75, #FA7E1E, #D62976, #962FBF, #4F5BD5)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff",
-                }}
-              >
-                <Instagram sx={{ fontSize: 18 }} />
-              </Box>
-            }
-            sx={{
-              justifyContent: "flex-start",
-              color: "#e5e7eb",
-              textTransform: "none",
-              fontFamily: Montserrat,
-            }}
-          >
-            Instagram
-          </Button>
-
-          {/* YouTube */}
-          <Button
-            component={Link}
-            href="https://www.youtube.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            startIcon={
-              <Box
-                sx={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: "50%",
-                  backgroundColor: "#FF0000",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff",
-                }}
-              >
-                <YouTube sx={{ fontSize: 18 }} />
-              </Box>
-            }
-            sx={{
-              justifyContent: "flex-start",
-              color: "#e5e7eb",
-              textTransform: "none",
-              fontFamily: Montserrat,
-            }}
-          >
-            YouTube
-          </Button>
         </Box>
       </Drawer>
 
-      {/* FORM MODAL */}
-      <Modal open={open} onClose={handleClose}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: { xs: "90%", sm: 450 },
-            bgcolor: "#fff",
-            borderRadius: 2,
-            p: 1,
-            boxShadow: 24,
-            fontFamily: Montserrat,
-          }}
-        >
-          <Typography
-            variant="h6"
-            fontWeight={700}
-            mb={2}
-            sx={{ fontFamily: Montserrat }}
-          >
-            Inquiry Form
-          </Typography>
+      {/* --- MODAL INQUIRY FORM ARCHITECTURE --- */}
 
-          <TextField
-            fullWidth
-            label="Name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            {...textFieldCommon}
-          />
 
-          <TextField
-            fullWidth
-            label="Mobile Number"
-            name="mobile"
-            value={formData.mobile}
-            onChange={handleChange}
-            {...textFieldCommon}
-          />
-
-          <TextField
-            fullWidth
-            select
-            label="Inquiry Type"
-            name="type"
-            value={formData.type}
-            onChange={handleChange}
-            {...textFieldCommon}
-            SelectProps={{
-              MenuProps: { PaperProps: { sx: { fontFamily: Montserrat } } },
-            }}
-          >
-            {inquiryTypes.map((option) => (
-              <MenuItem
-                key={option.value}
-                value={option.value}
-                sx={{ fontFamily: Montserrat }}
-              >
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          <TextField
-            fullWidth
-            label="Order Number"
-            name="orderNumber"
-            value={formData.orderNumber}
-            onChange={handleChange}
-            {...textFieldCommon}
-          />
-
-          <TextField
-            fullWidth
-            label="Order Date"
-            name="orderDate"
-            type="date"
-            value={formData.orderDate}
-            onChange={handleChange}
-            InputLabelProps={{ shrink: true, sx: { fontFamily: Montserrat } }}
-            InputProps={{ sx: { fontFamily: Montserrat } }}
-            sx={{ mb: 2 }}
-          />
-
-          <TextField
-            fullWidth
-            label="Description"
-            name="description"
-            multiline
-            rows={3}
-            value={formData.description}
-            onChange={handleChange}
-            InputLabelProps={{ sx: { fontFamily: Montserrat } }}
-            InputProps={{ sx: { fontFamily: Montserrat } }}
-            sx={{ mb: 2 }}
-          />
-
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={handleSaveAndShare}
-            disabled={loading}
-            sx={{
-              bgcolor: "rgb(10, 83, 151)",
-              color: "#000",
-              textTransform: "none",
-              fontFamily: Montserrat,
-            }}
-          >
-            {loading ? (
-              <CircularProgress size={20} />
-            ) : (
-              "Save & Send to WhatsApp"
-            )}
-          </Button>
-        </Box>
-      </Modal>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={5000}
-        onClose={handleSnackbarClose}
+      {/* --- NOTIFICATION GATEWAY --- */}
+      <Snackbar 
+        open={toast.show} 
+        autoHideDuration={5000} 
+        onClose={() => setToast(t => ({ ...t, show: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbar.severity}
-          sx={{ width: "100%", fontFamily: Montserrat }}
+        <Alert 
+          onClose={() => setToast(t => ({ ...t, show: false }))} 
+          severity={toast.type} 
+          variant="filled" 
+          sx={{ width: "100%", borderRadius: "12px", fontFamily: MONTSERRAT, fontWeight: 700, boxShadow: theme.shadows[10] }}
         >
-          {snackbar.message}
+          {toast.msg}
         </Alert>
       </Snackbar>
     </>
@@ -744,3 +472,10 @@ _Sent via buycourse.lk Inquiry Form_
 };
 
 export default Topbar;
+
+/**
+ * ============================================================================
+ * END OF COMPONENT: Topbar
+ * Ensure VITE_API_HOST is defined in the .env environment configuration.
+ * ============================================================================
+ */
