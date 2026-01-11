@@ -572,7 +572,10 @@ const Premiumaccounthome: React.FC = () => {
           align="center"
           sx={{
             fontWeight: 700,
-            mb: 3,
+            // Responsive Font Size: small on mobile (xs), larger on desktop (md)
+            fontSize: { xs: '1.5rem', sm: '1.8rem', md: '2.125rem' },
+            // Responsive Margin: less spacing on mobile
+            mb: { xs: 2, md: 3 },
             color: "#0a5397",
             fontFamily: "'Montserrat', sans-serif",
           }}
@@ -597,7 +600,7 @@ const Premiumaccounthome: React.FC = () => {
               </Box>
             ) : null}
 
-            {renderSection("All OTT Services", courses, "/premium-account-service")}
+            {renderSection("  ", courses, "/premium-account-service")}
           </>
         )}
       </Container>
