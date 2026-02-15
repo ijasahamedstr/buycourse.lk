@@ -1,430 +1,333 @@
-// src/pages/Programmes.tsx
-import React, { useEffect, useState } from "react";
-import { Box, Container, Typography, Button, CircularProgress } from "@mui/material";
+/**
+ * ============================================================================
+ * COMPONENT: EliteProgrammesUltra (Version 11.0.0)
+ * DESCRIPTION: Premium API-Driven Course Intelligence System.
+ * TYPOGRAPHY: Strict "Montserrat" implementation.
+ * LIBRARIES: MUI, Framer Motion, Swiper, Axios.
+ * ============================================================================
+ */
+
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import {
+  Box, Container, Typography, Button, CircularProgress, Stack,
+  alpha, styled, useTheme, useMediaQuery, Divider
+} from "@mui/material";
+import {
+  ArrowForwardIos as ArrowIcon,
+  TimerOutlined as TimeIcon,
+  AutoAwesome as MagicIcon,
+  VerifiedUser as VerifiedIcon,
+  Language as GlobeIcon,
+  LocalFireDepartment as HotIcon
+} from "@mui/icons-material";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Pagination } from "swiper/modules";
+import { Autoplay, Pagination, Navigation, EffectCoverflow } from "swiper/modules";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
+// Essential External Styles
 import "swiper/css";
 import "swiper/css/pagination";
+import "swiper/css/navigation";
+import "swiper/css/effect-coverflow";
 
-type Course = {
-  id: string;
-  title: string;
-  price?: string | number;
-  duration?: string;
-  image: string;
-  description: string;
-  category?: "tamil" | "sinhala" | "english" | "other";
-  demoVideo?: string;
-  mainHeadings?: string[];
-  instructor?: string;
-  coursedemovideolink?: string;
-  date?: string;
-};
+// --- DESIGN TOKENS ---
+const MONTSERRAT = '"Montserrat", sans-serif';
+const ACCENT = "#0a5397";
+const DARK = "#052342";
+const GRADIENT_PRIMARY = `linear-gradient(135deg, ${ACCENT} 0%, ${DARK} 100%)`;
 
-const FALLBACK_COURSES: Course[] = [
-  {
-    id: "tamil-101",
-    title: "Tamil Language — Beginner",
-    price: "3,499",
-    duration: "3 months",
-    image:
-      "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1600&q=80",
-    description: "Start speaking Tamil confidently.",
-    category: "tamil",
-  },
-  {
-    id: "tamil-advanced",
-    title: "Tamil Conversation — Intermediate",
-    price: "4,499",
-    duration: "3 months",
-    image:
-      "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=1600&q=80",
-    description: "Practice real-life Tamil conversations.",
-    category: "tamil",
-  },
-  {
-    id: "sinhala-101",
-    title: "Sinhala Essentials",
-    price: "3,499",
-    duration: "3 months",
-    image:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1600&q=80",
-    description: "Essential Sinhala for beginners.",
-    category: "sinhala",
-  },
-  {
-    id: "english-communication",
-    title: "English Communication Mastery",
-    price: "4,999",
-    duration: "4 months",
-    image:
-      "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1600&q=80",
-    description: "Improve speaking and writing skills.",
-    category: "english",
-  },
-];
+// --- STYLED COMPONENTS ---
 
-const slugify = (text: string) =>
-  text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/['"]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9\-]/g, "")
-    .replace(/\-+/g, "-");
+const MainWrapper = styled(Box)({
+  backgroundColor: "#ffffff",
+  minHeight: "100vh",
+  fontFamily: MONTSERRAT,
+  position: "relative",
+  overflow: "hidden"
+});
 
-const truncate = (text: string | undefined, max = 100) => {
-  if (!text) return "";
-  const cleaned = text.replace(/\s+/g, " ").trim();
-  return cleaned.length > max ? cleaned.slice(0, max).trim() + "…" : cleaned;
-};
+const TabButton = styled(motion.button)<{ active: boolean }>(({ active }) => ({
+  padding: "14px 28px",
+  borderRadius: "50px",
+  border: "none",
+  background: active ? GRADIENT_PRIMARY : alpha(ACCENT, 0.05),
+  color: active ? "#fff" : DARK,
+  fontFamily: MONTSERRAT,
+  fontSize: "0.85rem",
+  fontWeight: 800,
+  letterSpacing: "1px",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  boxShadow: active ? `0 10px 20px ${alpha(ACCENT, 0.3)}` : "none",
+  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+  "&:hover": {
+    background: active ? GRADIENT_PRIMARY : alpha(ACCENT, 0.12),
+    transform: "translateY(-2px)"
+  }
+}));
+
+const CountBadge = styled(Box)<{ active: boolean }>(({ active }) => ({
+  padding: "2px 8px",
+  borderRadius: "10px",
+  background: active ? "rgba(255,255,255,0.2)" : alpha(ACCENT, 0.1),
+  fontSize: "0.7rem",
+  fontWeight: 900
+}));
+
+const PerspectiveCard = styled(motion.div)({
+  perspective: "1500px",
+  height: 520,
+  width: "100%",
+  "&:hover .card-flipper": {
+    transform: "rotateY(180deg)",
+  },
+});
+
+const CardFlipper = styled(Box)({
+  position: "relative",
+  width: "100%",
+  height: "100%",
+  transition: "transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+  transformStyle: "preserve-3d",
+  className: "card-flipper"
+});
+
+const CardFace = styled(Box)<{ face: "front" | "back" }>(({ face }) => ({
+  position: "absolute",
+  width: "100%",
+  height: "100%",
+  backfaceVisibility: "hidden",
+  borderRadius: "30px",
+  overflow: "hidden",
+  boxShadow: "0 20px 40px rgba(0,0,0,0.06)",
+  display: "flex",
+  flexDirection: "column",
+  border: `1px solid ${alpha(DARK, 0.05)}`,
+  ...(face === "back" && {
+    transform: "rotateY(180deg)",
+    background: GRADIENT_PRIMARY,
+    color: "#fff",
+    padding: "40px",
+    justifyContent: "center",
+    textAlign: "center"
+  }),
+}));
+
+const PriceBox = styled(Box)({
+  position: "absolute",
+  top: 20,
+  right: 20,
+  padding: "8px 16px",
+  background: "rgba(255,255,255,0.95)",
+  borderRadius: "14px",
+  color: ACCENT,
+  fontWeight: 900,
+  fontFamily: MONTSERRAT,
+  zIndex: 5,
+  boxShadow: "0 8px 16px rgba(0,0,0,0.1)"
+});
+
+// --- MAIN COMPONENT ---
 
 const Programmes: React.FC = () => {
-  const [mounted, setMounted] = useState(false);
-  const [courses, setCourses] = useState<Course[]>(FALLBACK_COURSES);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>("");
-  const [dbEmpty, setDbEmpty] = useState<boolean>(false);
-
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState("all");
+  
+  const theme = useTheme();
   const navigate = useNavigate();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  const API_URL = `${import.meta.env.VITE_API_HOST}/Couressection`;
 
   useEffect(() => {
-    setMounted(true);
-
-    let rellaxInstance: any = null;
-    if (typeof window !== "undefined") {
-      (async () => {
-        try {
-          const mod = await import("rellax");
-          const Rellax = mod?.default || mod;
-          rellaxInstance = new Rellax(".rellax", { speed: -2 });
-        } catch (err) {
-          // noop if rellax isn't installed
-        }
-      })();
-    }
-
-    const fetchCourses = async () => {
+    const getCourses = async () => {
       try {
-        const resp = await axios.get(`${import.meta.env.VITE_API_HOST}/Couressection`);
-        const data = resp.data;
-
-        let items: any[] = [];
-        if (Array.isArray(data)) items = data;
-        else if (Array.isArray(data?.data)) items = data.data;
-        else if (Array.isArray(data?.rows)) items = data.rows;
-        else if (data && typeof data === "object") {
-          const firstArray = Object.values(data).find((v) => Array.isArray(v));
-          items = Array.isArray(firstArray) ? firstArray : [];
-        }
-
-        if (!items || items.length === 0) {
-          setDbEmpty(true);
-          setError("");
-          setCourses(FALLBACK_COURSES);
-          return;
-        }
-
-        const mapped: Course[] = items.map((item: any, idx: number) => {
-          const id = (item.id ?? item._id ?? item.courseId ?? item.course_id ?? `course-${idx}`).toString();
-          const title =
-            item.courseName ?? item.title ?? item.name ?? item.course_name ?? `Course ${idx + 1}`;
-          const description =
-            item.courseDescription ?? item.description ?? item.summary ?? item.course_description ?? "";
-          const price = item.coursePrice ?? item.price ?? item.fee ?? undefined;
-          const duration = item.duration ?? item.courseDuration ?? item.course_duration ?? undefined;
-          const image =
-            item.courseImage ?? item.image ?? item.imageUrl ?? item.image_url ?? item.photo ?? "";
-          const categoryRaw = (item.courseCategory ?? item.category ?? "other").toString().toLowerCase();
-          const category: Course["category"] =
-            categoryRaw.includes("tamil")
-              ? "tamil"
-              : categoryRaw.includes("sinhala")
-              ? "sinhala"
-              : categoryRaw.includes("english")
-              ? "english"
-              : "other";
-          const demoVideo = item.coursedemovideolink ?? item.demo ?? item.demoLink ?? undefined;
-          const mainHeadings: string[] = Array.isArray(item.mainHeadings)
-            ? item.mainHeadings
-            : typeof item.mainHeadings === "string"
-            ? [item.mainHeadings]
-            : [];
-
-          return {
-            id,
-            title,
-            price,
-            duration,
-            image: image || "",
-            description,
-            category,
-            demoVideo,
-            mainHeadings,
-            instructor: item.instructor ?? item.tutor ?? item.teacher ?? "TBA",
-            coursedemovideolink: demoVideo,
-            date: item.date ?? "",
-          };
-        });
-
-        const valid = mapped.filter((m) => m.title);
-        if (valid.length === 0) {
-          setDbEmpty(true);
-          setCourses(FALLBACK_COURSES);
-        } else {
-          setCourses(valid);
-        }
-      } catch (err: any) {
-        console.error("Error fetching courses:", err);
-        setError("Unable to fetch courses from server. Showing default courses.");
-        setCourses(FALLBACK_COURSES);
+        const response = await axios.get(API_URL);
+        const rawData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+        
+        const mapped = rawData.map((item: any, idx: number) => ({
+          id: item.id || item._id || `course-${idx}`,
+          title: item.courseName || "Executive module",
+          desc: item.courseDescription || "Professional grade curriculum for advanced skill acquisition.",
+          price: item.coursePrice || "TBA",
+          duration: item.courseDuration || "8 Weeks",
+          image: item.courseImage || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1000",
+          category: (item.courseCategory || "other").toLowerCase()
+        }));
+        setCourses(mapped);
+      } catch (err) {
+        console.error("Fetch Error:", err);
       } finally {
-        setTimeout(() => setLoading(false), 150);
+        setTimeout(() => setLoading(false), 800);
       }
     };
+    getCourses();
+  }, [API_URL]);
 
-    fetchCourses();
-
-    return () => {
-      if (rellaxInstance && typeof rellaxInstance.destroy === "function") rellaxInstance.destroy();
+  const sortedData = useMemo(() => {
+    return {
+      all: courses,
+      tamil: courses.filter(c => c.category.includes("tamil")),
+      sinhala: courses.filter(c => c.category.includes("sinhala")),
+      english: courses.filter(c => c.category.includes("english")),
+      other: courses.filter(c => !["tamil", "sinhala", "english"].some(l => c.category.includes(l)))
     };
-  }, []);
+  }, [courses]);
 
-  const tamilCourses = courses.filter((c) => c.category === "tamil");
-  const sinhalaCourses = courses.filter((c) => c.category === "sinhala");
-  const englishCourses = courses.filter((c) => c.category === "english");
-  const otherCourses = courses.filter((c) => !["tamil", "sinhala", "english"].includes(c.category ?? "other"));
-
-  const handleSlideClick = (course: Course) => {
-    const slug = slugify(course.id || course.title);
-    navigate(`/course/${slug}`);
-  };
-
-  const renderSection = (title: string, list: Course[], viewMorePath: string) => {
-    if (!list.length) return null;
+  const renderSection = (title: string, list: any[]) => {
+    if (list.length === 0) return null;
     return (
-      <Box sx={{ mb: 6 }}>
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2, gap: 2, flexWrap: "wrap" }}>
-          <Typography variant="h5" sx={{ fontWeight: 700, color: "#0a5397", fontFamily: "'Montserrat', sans-serif" }}>
+      <Box sx={{ mb: 12 }}>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 6, px: { xs: 2, md: 0 } }}>
+          <Box sx={{ width: 6, height: 35, bgcolor: ACCENT, borderRadius: 4 }} />
+          <Typography variant="h3" sx={{ fontFamily: MONTSERRAT, fontWeight: 900, color: DARK, fontSize: { xs: "1.75rem", md: "2.5rem" } }}>
             {title}
           </Typography>
+        </Stack>
 
-          <Typography
-            component="button"
-            onClick={() => navigate(viewMorePath)}
-            style={{ background: "none", border: "none", cursor: "pointer" }}
-            sx={{
-              color: "#0a5397",
-              fontWeight: 700,
-              textDecoration: "none",
-              "&:hover": { textDecoration: "underline" },
-              fontFamily: "'Montserrat', sans-serif",
-              fontSize: "0.95rem",
-            } as any}
-          >
-            View more courses →
-          </Typography>
-        </Box>
+        <Swiper
+          modules={[Autoplay, Pagination, Navigation, EffectCoverflow]}
+          effect="coverflow"
+          grabCursor
+          centeredSlides={false}
+          slidesPerView={isMobile ? 1.15 : 3.3}
+          coverflowEffect={{ rotate: 0, stretch: 0, depth: 100, modifier: 1, slideShadows: false }}
+          autoplay={{ delay: 5000 }}
+          style={{ padding: "10px 10px 70px 10px", overflow: "visible" }}
+        >
+          {list.map((c) => (
+            <SwiperSlide key={c.id}>
+              <PerspectiveCard>
+                <CardFlipper className="card-flipper">
+                  {/* FRONT FACE */}
+                  <CardFace face="front" sx={{ bgcolor: "#fff" }}>
+                    <Box sx={{ height: 260, position: "relative" }}>
+                      <Box component="img" src={c.image} sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <PriceBox>LKR {c.price}</PriceBox>
+                      <Box sx={{ position: "absolute", top: 20, left: 20 }}>
+                         {/* <Chip 
+                            icon={<HotIcon style={{ color: "#ff9800", fontSize: 16 }} />} 
+                            label="BESTSELLER" 
+                            sx={{ bgcolor: "#fff", fontWeight: 900, fontFamily: MONTSERRAT, fontSize: "0.65rem" }} 
+                         /> */}
+                      </Box>
+                    </Box>
+                    <Box sx={{ p: 4, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                      <Typography variant="h5" sx={{ fontFamily: MONTSERRAT, fontWeight: 800, mb: 2, color: DARK, height: "3.5rem", overflow: "hidden" }}>
+                        {c.title}
+                      </Typography>
+                      <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 'auto', color: "text.secondary" }}>
+                        <TimeIcon sx={{ fontSize: 18 }} />
+                        <Typography variant="body2" sx={{ fontFamily: MONTSERRAT, fontWeight: 600 }}>{c.duration}</Typography>
+                      </Stack>
+                    </Box>
+                  </CardFace>
 
-        {mounted && (
-          <Swiper
-            spaceBetween={20}
-            slidesPerView={1.05}
-            autoplay={{ delay: 3000, disableOnInteraction: false }}
-            pagination={{ clickable: true }}
-            loop={true}
-            breakpoints={{ 600: { slidesPerView: 2 }, 900: { slidesPerView: 3 }, 1200: { slidesPerView: 4 } }}
-            modules={[Autoplay, Pagination]}
-            style={{ paddingBottom: "30px" }}
-          >
-            {list.map((course) => (
-              <SwiperSlide key={course.id}>
-                <Box
-                  onClick={() => handleSlideClick(course)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") handleSlideClick(course);
-                  }}
-                  sx={{
-                    width: "100%",
-                    height: 410,
-                    position: "relative",
-                    transformStyle: "preserve-3d",
-                    transition: "transform 0.6s",
-                    cursor: "pointer",
-                    "&:hover": { transform: "rotateY(180deg)" },
-                    perspective: "1000px",
-                    outline: "none",
-                  }}
-                >
-                  {/* Front */}
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      width: "100%",
-                      height: "100%",
-                      borderRadius: 3,
-                      backfaceVisibility: "hidden",
-                      boxShadow: 3,
-                      backgroundColor: "#fff",
-                      overflow: "hidden",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "flex-start",
-                      alignItems: "flex-start",
-                      textAlign: "left",
-                      px: 2,
-                      py: 2,
-                    }}
-                  >
-                    <Box
+                  {/* BACK FACE */}
+                  <CardFace face="back">
+                    <MagicIcon sx={{ fontSize: 50, mb: 2, opacity: 0.5 }} />
+                    <Typography variant="h5" sx={{ fontFamily: MONTSERRAT, fontWeight: 900, mb: 2 }}>Curriculum Preview</Typography>
+                    <Typography variant="body2" sx={{ fontFamily: MONTSERRAT, mb: 4, opacity: 0.8, lineHeight: 1.7 }}>
+                      {c.desc.substring(0, 140)}...
+                    </Typography>
+                    <Divider sx={{ width: "50%", borderColor: "rgba(255,255,255,0.2)", mb: 4, mx: "auto" }} />
+                    <Button
+                      fullWidth
+                      onClick={() => navigate(`/course/${c.id}`)}
+                      variant="contained"
                       sx={{
-                        width: "100%",
-                        maxWidth: 340,
-                        height: 200,
-                        borderRadius: 2,
-                        overflow: "hidden",
-                        mt: 0,
-                        position: "relative",
-                        boxShadow: 2,
-                        "& .image-bg": {
-                          position: "absolute",
-                          inset: 0,
-                          backgroundImage: () =>
-                            `linear-gradient(to bottom, rgba(0,0,0,0.16), rgba(0,0,0,0.02)), url(${course.image})`,
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                          transition: "transform 0.6s ease, filter 0.4s ease",
-                        },
-                        "&:hover .image-bg": {
-                          transform: "scale(1.08)",
-                          filter: "brightness(0.96)",
-                        },
+                        bgcolor: "#fff", color: ACCENT, fontWeight: 900, fontFamily: MONTSERRAT, py: 1.5, borderRadius: "14px",
+                        "&:hover": { bgcolor: "#f0f0f0" }
                       }}
                     >
-                      <Box className="image-bg" />
-                    </Box>
-
-                    <Box sx={{ py: 1.2, px: 0, width: "100%", maxWidth: 340 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, fontFamily: "'Montserrat', sans-serif", fontSize: '0.95rem' }}>
-                        {course.title}
-                      </Typography>
-
-                      <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.4, fontFamily: "'Montserrat', sans-serif", fontSize: '0.8rem' }}>
-                        {truncate(course.description, 90)}
-                      </Typography>
-
-                      <Typography variant="body2" sx={{ mt: 1, fontWeight: 700, color: "#0a5397", fontFamily: "'Montserrat', sans-serif", fontSize: '0.85rem' }}>
-                        {course.price ? `Price: LKR ${course.price}` : "Price: —"}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  {/* Back */}
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      width: "100%",
-                      height: "100%",
-                      borderRadius: 3,
-                      backfaceVisibility: "hidden",
-                      transform: "rotateY(180deg)",
-                      background: "linear-gradient(135deg, #0a5397, #123a6a)",
-                      color: "#fff",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      textAlign: "left",
-                      px: 3,
-                      boxShadow: 4,
-                      py: 3,
-                    }}
-                  >
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, fontFamily: "'Montserrat', sans-serif", fontSize: '1rem' }}>
-                        {course.title}
-                      </Typography>
-
-                      <Typography variant="body2" sx={{ lineHeight: 1.6, maxWidth: 280, fontFamily: "'Montserrat', sans-serif", opacity: 0.95, fontSize: '0.85rem' }}>
-                        {truncate(course.description, 110)}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ width: "100%", display: "flex", gap: 2, justifyContent: "flex-start" }}>
-                      <Button
-                        variant="outlined"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const slug = slugify(course.id || course.title);
-                          navigate(`/course/${slug}`);
-                        }}
-                        sx={{ backgroundColor: "#fff", color: "#0a5397", fontWeight: 700, borderRadius: 2, px: 3, py: 1, "&:hover": { backgroundColor: "#f3f3f3" }, fontSize: '0.85rem' }}
-                      >
-                        View
-                      </Button>
-                    </Box>
-                  </Box>
-                </Box>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        )}
+                      View Full Syllabus
+                    </Button>
+                  </CardFace>
+                </CardFlipper>
+              </PerspectiveCard>
+            </SwiperSlide>
+          ))}
+        </Swiper>
       </Box>
     );
   };
 
+  if (loading) return (
+    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+      <CircularProgress size={50} thickness={2} sx={{ color: ACCENT }} />
+      <Typography sx={{ mt: 3, fontFamily: MONTSERRAT, fontWeight: 900, letterSpacing: 4, color: ACCENT }}>SYNCHRONIZING CATALOGUE</Typography>
+    </Box>
+  );
+
   return (
-    <Box sx={{ backgroundColor: "#f9fbff", py: { xs: 6, md: 10 }, position: "relative", overflow: "hidden" }}>
-      <Box className="rellax" data-rellax-speed="-2" sx={{ position: "absolute", top: -120, left: -120, width: 420, height: 420, borderRadius: "50%", backgroundColor: "#cce4ff", zIndex: 0 }} />
+    <MainWrapper>
+      {/* BACKGROUND ELEMENTS */}
+      <Box sx={{ position: "absolute", top: -150, left: "-10%", width: "40%", height: 600, background: alpha(ACCENT, 0.03), borderRadius: "50%", filter: "blur(100px)", zIndex: 0 }} />
 
-      <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
-        <Typography variant="h6" align="center" sx={{ color: "text.secondary", mb: 1, fontWeight: 500, fontFamily: "'Montserrat', sans-serif", textTransform: "uppercase", letterSpacing: 1 }}>
-          Programs
-        </Typography>
-        <Typography variant="h4" align="center" sx={{ fontWeight: 700, mb: 3, color: "#0a5397", fontFamily: "'Montserrat', sans-serif" }}>
-          Popular Courses
-        </Typography>
+      <Container maxWidth="xl" sx={{ py: 10, position: "relative", zIndex: 1 }}>
+        <Box sx={{ textAlign: "center", mb: 8 }}>
+          <Stack direction="row" spacing={1.5} justifyContent="center" alignItems="center" sx={{ mb: 3 }}>
+            <VerifiedIcon sx={{ color: ACCENT, fontSize: 24 }} />
+            <Typography variant="overline" sx={{ fontFamily: MONTSERRAT, fontWeight: 900, letterSpacing: 6, color: ACCENT }}>
+              Premium Learning Experience
+            </Typography>
+          </Stack>
+          <Typography variant="h1" sx={{ fontFamily: MONTSERRAT, fontWeight: 700, fontSize: { xs: "2.5rem", md: "3.5rem" }, mb: 3, color: DARK }}>
+            Unlock New <span style={{ color: ACCENT }}>Possibilities.</span>
+          </Typography>
+          <Typography sx={{ fontFamily: MONTSERRAT, color: "text.secondary", maxWidth: 700, mx: "auto", fontSize: "1.1rem", lineHeight: 1.8 }}>
+            Join thousands of professionals mastering new skills through our API-driven interactive courses.
+          </Typography>
 
-        {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-            <CircularProgress />
+          {/* NEW PILL-STYLE TABS */}
+          <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 6, flexWrap: "wrap", gap: 2 }}>
+            {["all", "tamil", "sinhala", "english"].map((f) => (
+              <TabButton
+                key={f}
+                active={activeFilter === f}
+                onClick={() => setActiveFilter(f)}
+                whileTap={{ scale: 0.95 }}
+              >
+                {f === "all" && <GlobeIcon sx={{ fontSize: 18 }} />}
+                {f.toUpperCase()}
+                <CountBadge active={activeFilter === f}>
+                  {sortedData[f as keyof typeof sortedData].length}
+                </CountBadge>
+              </TabButton>
+            ))}
+          </Stack>
+        </Box>
+
+        {/* DYNAMIC CONTENT TRANSITIONS */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeFilter}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+          >
+            {(activeFilter === "all" || activeFilter === "tamil") && renderSection("Tamil Excellence", sortedData.tamil)}
+            {(activeFilter === "all" || activeFilter === "sinhala") && renderSection("Sinhala Core", sortedData.sinhala)}
+            {(activeFilter === "all" || activeFilter === "english") && renderSection("English Mastery", sortedData.english)}
+            {activeFilter === "all" && sortedData.other.length > 0 && renderSection("Specialized Programs", sortedData.other)}
+          </motion.div>
+        </AnimatePresence>
+
+        {courses.length === 0 && (
+          <Box sx={{ textAlign: "center", py: 15, bgcolor: alpha(ACCENT, 0.02), borderRadius: 10, border: `2px dashed ${alpha(ACCENT, 0.1)}` }}>
+            <Typography variant="h4" sx={{ fontFamily: MONTSERRAT, fontWeight: 900, color: alpha(DARK, 0.3) }}>
+              No Programs Found in this Category
+            </Typography>
           </Box>
-        ) : (
-          <>
-            {error ? (
-              <Box sx={{ textAlign: "center", mb: 3 }}>
-                <Typography variant="body1" color="error" sx={{ mb: 1 }}>
-                  {error}
-                </Typography>
-                <Button onClick={() => navigate("/courses")} variant="outlined">
-                  View all courses
-                </Button>
-              </Box>
-            ) : dbEmpty ? (
-              <Box sx={{ textAlign: "center", mb: 3 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  No courses found in the database — showing default courses.
-                </Typography>
-                <Button onClick={() => navigate("/courses")} variant="outlined">
-                  View all courses
-                </Button>
-              </Box>
-            ) : null}
-
-            {renderSection("Tamil Courses", tamilCourses, "/tamil-courses")}
-            {renderSection("Sinhala Courses", sinhalaCourses, "/sinhala-courses")}
-            {renderSection("English Courses", englishCourses, "/english-courses")}
-            {renderSection("Other Courses", otherCourses, "/courses")}
-          </>
         )}
       </Container>
-    </Box>
+    </MainWrapper>
   );
 };
 

@@ -202,7 +202,6 @@ const Topbar: React.FC = () => {
     try {
       localStorage.removeItem(CART_KEY);
       localStorage.removeItem(OTT_CART_KEY);
-      // Trigger global event for other listeners (Cart/Checkout)
       window.dispatchEvent(new Event("cartCleared"));
     } catch (error) {
       console.error("Local Storage sync error:", error);
@@ -213,16 +212,10 @@ const Topbar: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 30) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
+      setScrolled(window.scrollY > 30);
     };
 
     window.addEventListener("scroll", handleScroll);
-    
-    // Custom window event listener for deep-linking modal triggers
     const onTriggerInquiry = () => setOpen(true);
     window.addEventListener("openInquiry", onTriggerInquiry);
 
@@ -256,7 +249,6 @@ const Topbar: React.FC = () => {
   }, [form]);
 
   const handleInquirySubmit = async () => {
-    // Basic validation
     if (!form.name || !form.mobile || !form.type) {
       setToast({ show: true, msg: "Please provide Name, Mobile, and Category.", type: "error" });
       return;
@@ -293,7 +285,6 @@ const Topbar: React.FC = () => {
 
       setToast({ show: true, msg: "Inquiry Synced. Connecting to WhatsApp...", type: "success" });
 
-      // Execution delay for UX smoothness
       setTimeout(() => {
         handleWhatsAppRedirect();
         clearStorageData();
@@ -308,7 +299,6 @@ const Topbar: React.FC = () => {
         msg: err?.message || "Cloud sync failed. Opening WhatsApp fallback...", 
         type: "error" 
       });
-      // Fallback: Open WhatsApp even if API fails to ensure client contact
       setTimeout(() => {
         handleWhatsAppRedirect();
         setLoading(false);
@@ -336,7 +326,6 @@ const Topbar: React.FC = () => {
         <Container maxWidth="xl">
           <Box display="flex" justifyContent="space-between" alignItems="center">
             
-            {/* LEFT: BRAND & CONTACT IDENTIFIERS */}
             <Stack direction="row" spacing={isMobile ? 1 : 4} alignItems="center">
               <Box display="flex" alignItems="center" sx={{ color: "#fff" }}>
                 <SupportIcon sx={{ mr: 1, color: BRAND_PRIMARY, fontSize: isMobile ? "1.2rem" : "1.6rem" }} />
@@ -359,7 +348,6 @@ const Topbar: React.FC = () => {
               )}
             </Stack>
 
-            {/* RIGHT: CONNECTIVITY & CTA */}
             <Stack direction="row" spacing={isMobile ? 1 : 2} alignItems="center">
               {!isTablet ? (
                 <Stack direction="row" spacing={1.5}>
@@ -410,7 +398,7 @@ const Topbar: React.FC = () => {
         </Box>
         
         <Stack spacing={3}>
-          <Typography variant="overline" sx={{ color: alpha('#fff', 0.4), letterSpacing: 2,fontFamily: MONTSERRAT, }}>Official Channels</Typography>
+          <Typography variant="overline" sx={{ color: alpha('#fff', 0.4), letterSpacing: 2, fontFamily: MONTSERRAT }}>Official Channels</Typography>
           {[
             { label: "WhatsApp Gateway", icon: <WhatsAppIcon />, color: "#25D366", link: "https://wa.me/94767080553" },
             { label: "Facebook Community", icon: <FacebookIcon />, color: "#1877F2", link: "https://facebook.com" },
@@ -449,7 +437,87 @@ const Topbar: React.FC = () => {
       </Drawer>
 
       {/* --- MODAL INQUIRY FORM ARCHITECTURE --- */}
+  <Modal 
+        open={open} 
+        onClose={() => setOpen(false)} 
+        closeAfterTransition 
+        BackdropComponent={Backdrop} 
+        BackdropProps={{ timeout: 500 }}
+      >
+        <Fade in={open}>
+          <StyledModalBox>
+            {/* Header with Space Between */}
+            <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 900, fontFamily: MONTSERRAT, color: BRAND_DARK, fontSize: isMobile ? '1.25rem' : '1.5rem' }}>
+                  Submit Inquiry
+                </Typography>
+                <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', mt: 0.5, fontFamily: MONTSERRAT, color: 'text.secondary' }}>
+                  <SafeIcon sx={{ fontSize: 14, mr: 0.8, color: BRAND_PRIMARY }} /> Secure Encrypted Communication
+                </Typography>
+              </Box>
+              <IconButton onClick={() => setOpen(false)} size="small" sx={{ mt: -1 }}><CloseIcon /></IconButton>
+            </Box>
+            
+            <Divider sx={{ mb: 3 }} />
 
+            {/* Form Fields with consistent side spacing */}
+            <Box sx={{ width: '100%' }}>
+              <TextField {...textFieldProps} label="Full Name" name="name" value={form.name} onChange={handleInputChange} />
+              <TextField {...textFieldProps} label="Mobile Number" name="mobile" value={form.mobile} onChange={handleInputChange} />
+              
+              <TextField 
+                {...textFieldProps} 
+                select 
+                label="Inquiry Category" 
+                name="type" 
+                value={form.type} 
+                onChange={handleInputChange}
+                SelectProps={{ MenuProps: { PaperProps: { sx: { borderRadius: '12px' } } } }}
+              >
+                {INQUIRY_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value} sx={{ fontFamily: MONTSERRAT, fontSize: '0.9rem' }}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              {/* Stack for Order ID/Date - Dynamic spacing for all devices */}
+              <Stack 
+                direction={isMobile ? "column" : "row"} 
+                spacing={isMobile ? 0 : 2} 
+                sx={{ width: '100%' }}
+              >
+                <TextField {...textFieldProps} label="Order ID (Optional)" name="orderId" value={form.orderId} onChange={handleInputChange} />
+                <TextField 
+                  {...textFieldProps} 
+                  type="date" 
+                  label="Order Date" 
+                  name="orderDate" 
+                  value={form.orderDate} 
+                  onChange={handleInputChange} 
+                  InputLabelProps={{ shrink: true, sx: { fontFamily: MONTSERRAT } }} 
+                />
+              </Stack>
+
+              <TextField {...textFieldProps} multiline rows={3} label="Description" name="description" value={form.description} onChange={handleInputChange} />
+            </Box>
+
+            <Button 
+              fullWidth 
+              disabled={loading}
+              onClick={handleInquirySubmit}
+              sx={{ 
+                py: 2, borderRadius: "12px", bgcolor: BRAND_PRIMARY, color: "#fff", fontWeight: 700, fontFamily: MONTSERRAT, textTransform: "none", fontSize: "1rem",
+                "&:hover": { bgcolor: "rgb(8, 70, 130)" },
+                "&.Mui-disabled": { bgcolor: alpha(BRAND_PRIMARY, 0.3), color: "#fff" }
+              }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : "Verify & Send via WhatsApp"}
+            </Button>
+          </StyledModalBox>
+        </Fade>
+      </Modal>
 
       {/* --- NOTIFICATION GATEWAY --- */}
       <Snackbar 
@@ -476,6 +544,5 @@ export default Topbar;
 /**
  * ============================================================================
  * END OF COMPONENT: Topbar
- * Ensure VITE_API_HOST is defined in the .env environment configuration.
  * ============================================================================
  */
