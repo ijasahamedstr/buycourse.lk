@@ -1,10 +1,9 @@
 /**
  * ============================================================================
  * COMPONENT: Topbar
- * VERSION: 7.0.0
- * DESCRIPTION: Professional responsive header with Inquiry System.
+ * VERSION: 7.1.0 (Refined)
+ * DESCRIPTION: Professional responsive header with optimized Inquiry Modal.
  * THEME: Deep Blue (#0A5397) | Onyx Glassmorphism
- * RESPONSIVENESS: Mobile (xs), Tablet (sm/md), Desktop (lg/xl)
  * ============================================================================
  */
 
@@ -49,16 +48,15 @@ import {
   Send as SendIcon,
   SupportAgent as SupportIcon,
   VerifiedUser as SafeIcon,
-  Language as LanguageIcon,
+  Menu as MenuIcon, // Changed from LanguageIcon for better UX on mobile
 } from "@mui/icons-material";
 
-// --- GLOBAL CONFIGURATION & TYPES ---
+// --- GLOBAL CONFIGURATION ---
 
 const MONTSERRAT = '"Montserrat", sans-serif';
 const BRAND_PRIMARY = "rgb(10, 83, 151)";
-const BRAND_DARK = "#121212";
+const BRAND_DARK = "#0f172a";
 
-// Storage keys used across the application architecture
 const CART_KEY = "cartCourses";
 const OTT_CART_KEY = "ottCart";
 
@@ -69,11 +67,8 @@ const INQUIRY_OPTIONS = [
   { value: "Request Service", label: "Technical Support" },
 ];
 
-// --- STYLED COMPONENTS (PERFORMANCE OPTIMIZED) ---
+// --- STYLED COMPONENTS ---
 
-/**
- * Premium Navbar Wrapper with dynamic glassmorphism and scroll-sensing logic.
- */
 const NavWrapper = styled(Box)<{ scrolled: number }>(({ scrolled }) => ({
   width: "100%",
   height: scrolled ? "60px" : "75px",
@@ -84,19 +79,16 @@ const NavWrapper = styled(Box)<{ scrolled: number }>(({ scrolled }) => ({
   display: "flex",
   alignItems: "center",
   transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-  background: scrolled ? alpha("#000", 0.95) : alpha("#1A1A1A", 0.9),
+  background: scrolled ? alpha("#000", 0.90) : alpha("#0f172a", 0.95),
   backdropFilter: "blur(12px)",
-  borderBottom: `1px solid ${alpha("#fff", 0.1)}`,
+  borderBottom: `1px solid ${alpha("#fff", 0.08)}`,
   boxShadow: scrolled ? "0 10px 30px rgba(0,0,0,0.5)" : "none",
 }));
 
-/**
- * Social Link components with Squircle geometry and brand-specific hover transitions.
- */
 const SocialLink = styled(Link)<{ bgcolor: string }>(({ bgcolor }) => ({
-  width: 34,
-  height: 34,
-  borderRadius: "10px",
+  width: 32,
+  height: 32,
+  borderRadius: "8px",
   backgroundColor: alpha(bgcolor, 0.1),
   display: "flex",
   alignItems: "center",
@@ -107,65 +99,71 @@ const SocialLink = styled(Link)<{ bgcolor: string }>(({ bgcolor }) => ({
   textDecoration: "none",
   "&:hover": {
     backgroundColor: bgcolor,
-    transform: "translateY(-4px)",
-    boxShadow: `0 8px 15px ${alpha(bgcolor, 0.5)}`,
+    transform: "translateY(-3px)",
+    boxShadow: `0 4px 12px ${alpha(bgcolor, 0.4)}`,
   },
 }));
 
-/**
- * Responsive Modal Box with strict padding and viewport-aware sizing.
- */
 const StyledModalBox = styled(Box)(({ theme }) => ({
   position: "absolute",
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: "92%",
-  maxWidth: "540px",
+  width: "90%",
+  maxWidth: "550px",
   backgroundColor: "#ffffff",
-  borderRadius: "24px",
-  padding: theme.spacing(4),
-  boxShadow: "0 25px 60px rgba(0,0,0,0.4)",
+  borderRadius: "20px",
+  padding: theme.spacing(3.5),
+  boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
   outline: "none",
+  maxHeight: "90vh", 
   overflowY: "auto",
-  maxHeight: "95vh", 
+  // Custom Scrollbar
+  "&::-webkit-scrollbar": { width: "6px" },
+  "&::-webkit-scrollbar-track": { background: "#f1f1f1", borderRadius: "4px" },
+  "&::-webkit-scrollbar-thumb": { background: "#c1c1c1", borderRadius: "4px" },
+  "&::-webkit-scrollbar-thumb:hover": { background: "#a8a8a8" },
+
   [theme.breakpoints.down("sm")]: {
-    padding: theme.spacing(3),
-    borderRadius: "20px",
+    padding: theme.spacing(2.5),
     width: "95%",
+    borderRadius: "16px",
+    maxHeight: "95vh",
   },
 }));
 
-/**
- * Primary Call-To-Action with custom depth shadowing.
- */
-const PrimaryCTA = styled(Button)(({ }) => ({
+const PrimaryCTA = styled(Button)(({ theme }) => ({
   borderRadius: "50px",
   textTransform: "none",
   fontWeight: 700,
   fontFamily: MONTSERRAT,
-  padding: "10px 24px",
+  padding: "8px 22px",
   backgroundColor: BRAND_PRIMARY,
   color: "#fff",
   boxShadow: `0 4px 14px ${alpha(BRAND_PRIMARY, 0.4)}`,
   transition: "all 0.3s ease",
   "&:hover": {
     backgroundColor: "rgb(13, 100, 180)",
-    transform: "scale(1.03)",
+    transform: "translateY(-2px)",
+    boxShadow: `0 6px 20px ${alpha(BRAND_PRIMARY, 0.5)}`,
+  },
+  [theme.breakpoints.down("sm")]: {
+    padding: "6px 16px",
+    fontSize: "0.8rem",
   },
 }));
 
-// --- MAIN COMPONENT IMPLEMENTATION ---
+// --- MAIN COMPONENT ---
 
 const Topbar: React.FC = () => {
   const theme = useTheme();
   
-  // High-precision Media Queries for Adaptive UI
+  // Responsive Breakpoints
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isTablet = useMediaQuery(theme.breakpoints.down("md"));
   const isLargeDesktop = useMediaQuery(theme.breakpoints.up("lg"));
 
-  // --- STATE MANAGEMENT ---
+  // State
   const [open, setOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -185,8 +183,7 @@ const Topbar: React.FC = () => {
     orderDate: ""
   });
 
-  // --- PERSISTENCE & UTILITIES ---
-
+  // Utilities
   const resetForm = useCallback(() => {
     setForm({
       name: "",
@@ -208,13 +205,9 @@ const Topbar: React.FC = () => {
     }
   }, []);
 
-  // --- EFFECT HOOKS ---
-
+  // Scroll Listener
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 30);
-    };
-
+    const handleScroll = () => setScrolled(window.scrollY > 30);
     window.addEventListener("scroll", handleScroll);
     const onTriggerInquiry = () => setOpen(true);
     window.addEventListener("openInquiry", onTriggerInquiry);
@@ -225,8 +218,7 @@ const Topbar: React.FC = () => {
     };
   }, []);
 
-  // --- FORM LOGIC ---
-
+  // Handlers
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -250,13 +242,18 @@ const Topbar: React.FC = () => {
 
   const handleInquirySubmit = async () => {
     if (!form.name || !form.mobile || !form.type) {
-      setToast({ show: true, msg: "Please provide Name, Mobile, and Category.", type: "error" });
+      setToast({ show: true, msg: "Please fill in Name, Mobile, and Category.", type: "error" });
       return;
     }
 
     const API_HOST = import.meta.env.VITE_API_HOST as string | undefined;
     if (!API_HOST) {
-      setToast({ show: true, msg: "Configuration Error: API Gateway Missing.", type: "error" });
+      // Fallback if API not configured
+      setToast({ show: true, msg: "Redirecting to WhatsApp...", type: "success" });
+      setTimeout(() => {
+          handleWhatsAppRedirect();
+          setOpen(false);
+      }, 1000);
       return;
     }
 
@@ -279,11 +276,10 @@ const Topbar: React.FC = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || `Gateway Error: ${response.status}`);
+        throw new Error(`Server Error`);
       }
 
-      setToast({ show: true, msg: "Inquiry Synced. Connecting to WhatsApp...", type: "success" });
+      setToast({ show: true, msg: "Inquiry Saved. Opening WhatsApp...", type: "success" });
 
       setTimeout(() => {
         handleWhatsAppRedirect();
@@ -296,114 +292,141 @@ const Topbar: React.FC = () => {
     } catch (err: any) {
       setToast({ 
         show: true, 
-        msg: err?.message || "Cloud sync failed. Opening WhatsApp fallback...", 
+        msg: "Cloud sync failed. Opening WhatsApp fallback...", 
         type: "error" 
       });
       setTimeout(() => {
         handleWhatsAppRedirect();
         setLoading(false);
-      }, 1000);
+        setOpen(false);
+      }, 1500);
     }
   };
 
-  // --- SUB-COMPONENTS & MEMOIZED RENDERERS ---
-
+  // Memoized Input Props
   const textFieldProps = useMemo(() => ({
     fullWidth: true,
     variant: "filled" as const,
-    InputLabelProps: { sx: { fontFamily: MONTSERRAT, fontSize: '0.9rem' } },
+    InputLabelProps: { sx: { fontFamily: MONTSERRAT, fontSize: '0.85rem', color: '#64748b' } },
     InputProps: { 
         disableUnderline: true, 
-        sx: { borderRadius: '12px', fontFamily: MONTSERRAT, backgroundColor: alpha('#000', 0.04) } 
+        sx: { 
+            borderRadius: '10px', 
+            fontFamily: MONTSERRAT, 
+            backgroundColor: "#f1f5f9",
+            border: "1px solid transparent",
+            transition: "all 0.2s",
+            "&:hover": { backgroundColor: "#e2e8f0" },
+            "&.Mui-focused": { 
+                backgroundColor: "#fff", 
+                border: `1px solid ${BRAND_PRIMARY}`,
+                boxShadow: `0 0 0 2px ${alpha(BRAND_PRIMARY, 0.1)}`
+            }
+        } 
     },
-    sx: { mb: 2.5 }
   }), []);
 
   return (
     <>
-      {/* --- MAIN HEADER LAYER --- */}
+      {/* --- HEADER --- */}
       <NavWrapper scrolled={scrolled ? 1 : 0}>
         <Container maxWidth="xl">
           <Box display="flex" justifyContent="space-between" alignItems="center">
             
+            {/* Left Identity */}
             <Stack direction="row" spacing={isMobile ? 1 : 4} alignItems="center">
-              <Box display="flex" alignItems="center" sx={{ color: "#fff" }}>
-                <SupportIcon sx={{ mr: 1, color: BRAND_PRIMARY, fontSize: isMobile ? "1.2rem" : "1.6rem" }} />
-                <Typography variant="body2" sx={{ fontFamily: MONTSERRAT, fontWeight: 800, letterSpacing: 1, fontSize: isMobile ? "0.75rem" : "0.9rem" }}>
-                  {isMobile ? "OFFICIAL SUPPORT" : "OFFICIAL SUPPORT GATEWAY"}
-                </Typography>
+              <Box display="flex" alignItems="center" sx={{ color: "#fff", cursor: 'default' }}>
+                <SupportIcon sx={{ mr: 1, color: BRAND_PRIMARY, fontSize: isMobile ? "1.4rem" : "1.8rem" }} />
+                <Box>
+                  <Typography variant="body2" sx={{ fontFamily: MONTSERRAT, fontWeight: 800, letterSpacing: 0.5, lineHeight: 1, fontSize: isMobile ? "0.8rem" : "0.95rem" }}>
+                    SUPPORT CENTER
+                  </Typography>
+                  {!isMobile && (
+                    <Typography variant="caption" sx={{ fontFamily: MONTSERRAT, color: alpha("#fff", 0.5), fontSize: "0.7rem" }}>
+                      Official Gateway
+                    </Typography>
+                  )}
+                </Box>
               </Box>
 
               {!isMobile && (
-                <Stack direction="row" spacing={3}>
-                  <Link href="tel:+94767080553" sx={{ color: alpha("#fff", 0.75), fontSize: "0.85rem", textDecoration: "none", display: "flex", alignItems: "center", transition: "0.2s", "&:hover": { color: "#fff" } }}>
-                    <PhoneIcon sx={{ fontSize: "1rem", mr: 0.8 }} /> +94 76 708 0553
+                <Stack direction="row" spacing={3} sx={{ pt: 0.5 }}>
+                  <Link href="tel:+94767080553" sx={{ color: alpha("#fff", 0.7), fontSize: "0.8rem", textDecoration: "none", display: "flex", alignItems: "center", "&:hover": { color: "#fff" } }}>
+                    <PhoneIcon sx={{ fontSize: "0.9rem", mr: 0.8 }} /> +94 76 708 0553
                   </Link>
                   {isLargeDesktop && (
-                    <Link href="mailto:info@buycourse.lk" sx={{ color: alpha("#fff", 0.75), fontSize: "0.85rem", textDecoration: "none", display: "flex", alignItems: "center", transition: "0.2s", "&:hover": { color: "#fff" } }}>
-                      <EmailIcon sx={{ fontSize: "1rem", mr: 0.8 }} /> info@buycourse.lk
+                    <Link href="mailto:info@buycourse.lk" sx={{ color: alpha("#fff", 0.7), fontSize: "0.8rem", textDecoration: "none", display: "flex", alignItems: "center", "&:hover": { color: "#fff" } }}>
+                      <EmailIcon sx={{ fontSize: "0.9rem", mr: 0.8 }} /> info@buycourse.lk
                     </Link>
                   )}
                 </Stack>
               )}
             </Stack>
 
+            {/* Right Actions */}
             <Stack direction="row" spacing={isMobile ? 1 : 2} alignItems="center">
               {!isTablet ? (
-                <Stack direction="row" spacing={1.5}>
-                  <Tooltip title="Chat via WhatsApp" arrow>
-                    <SocialLink bgcolor="#25D366" href="https://wa.me/94767080553" target="_blank"><WhatsAppIcon sx={{ fontSize: 18 }} /></SocialLink>
+                <Stack direction="row" spacing={1}>
+                  <Tooltip title="WhatsApp">
+                    <SocialLink bgcolor="#25D366" href="https://wa.me/94767080553" target="_blank"><WhatsAppIcon sx={{ fontSize: 16 }} /></SocialLink>
                   </Tooltip>
-                  <Tooltip title="Follow on Facebook" arrow>
-                    <SocialLink bgcolor="#1877F2" href="https://facebook.com" target="_blank"><FacebookIcon sx={{ fontSize: 18 }} /></SocialLink>
+                  <Tooltip title="Facebook">
+                    <SocialLink bgcolor="#1877F2" href="https://facebook.com" target="_blank"><FacebookIcon sx={{ fontSize: 16 }} /></SocialLink>
                   </Tooltip>
-                  <Tooltip title="Follow on Instagram" arrow>
-                    <SocialLink bgcolor="#E4405F" href="https://instagram.com" target="_blank"><InstagramIcon sx={{ fontSize: 18 }} /></SocialLink>
+                  <Tooltip title="Instagram">
+                    <SocialLink bgcolor="#E4405F" href="https://instagram.com" target="_blank"><InstagramIcon sx={{ fontSize: 16 }} /></SocialLink>
                   </Tooltip>
-                  <Tooltip title="Visit YouTube" arrow>
-                    <SocialLink bgcolor="#FF0000" href="https://youtube.com" target="_blank"><YouTubeIcon sx={{ fontSize: 18 }} /></SocialLink>
+                  <Tooltip title="YouTube">
+                    <SocialLink bgcolor="#FF0000" href="https://youtube.com" target="_blank"><YouTubeIcon sx={{ fontSize: 16 }} /></SocialLink>
                   </Tooltip>
                 </Stack>
               ) : (
                 <IconButton 
                   onClick={() => setDrawerOpen(true)} 
-                  sx={{ color: BRAND_PRIMARY, bgcolor: alpha(BRAND_PRIMARY, 0.1), "&:hover": { bgcolor: alpha(BRAND_PRIMARY, 0.2) } }}
+                  sx={{ color: "#fff", bgcolor: alpha("#fff", 0.1), "&:hover": { bgcolor: alpha("#fff", 0.2) } }}
                 >
-                  <LanguageIcon />
+                  <MenuIcon />
                 </IconButton>
               )}
 
               <PrimaryCTA 
                 onClick={() => setOpen(true)} 
-                startIcon={!isMobile && <SendIcon sx={{ fontSize: '1.1rem !important' }} />}
-                sx={{ fontSize: isMobile ? '0.75rem' : '0.85rem', px: isMobile ? 2 : 3 }}
+                startIcon={!isMobile && <SendIcon sx={{ fontSize: '1rem !important' }} />}
               >
-                Inquire Here
+                Inquire Now
               </PrimaryCTA>
             </Stack>
           </Box>
         </Container>
       </NavWrapper>
 
-      {/* --- MOBILE/TABLET DRAWER NAVIGATION --- */}
+      {/* --- MOBILE DRAWER --- */}
       <Drawer 
         anchor="right" 
         open={drawerOpen} 
         onClose={() => setDrawerOpen(false)} 
-        PaperProps={{ sx: { width: 300, bgcolor: "#111827", color: "#fff", p: 4, backgroundImage: 'none' } }}
+        PaperProps={{ 
+          sx: { 
+            width: 280, 
+            bgcolor: "#0f172a", 
+            color: "#fff", 
+            p: 3,
+            borderLeft: "1px solid rgba(255,255,255,0.1)"
+          } 
+        }}
       >
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
-          <Typography variant="h6" sx={{ fontFamily: MONTSERRAT, fontWeight: 900, letterSpacing: 1 }}>Connect</Typography>
-          <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: "#fff", bgcolor: alpha('#fff', 0.05) }}><CloseIcon /></IconButton>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+          <Typography variant="h6" sx={{ fontFamily: MONTSERRAT, fontWeight: 700 }}>Quick Links</Typography>
+          <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: "#fff" }}><CloseIcon /></IconButton>
         </Box>
         
-        <Stack spacing={3}>
-          <Typography variant="overline" sx={{ color: alpha('#fff', 0.4), letterSpacing: 2, fontFamily: MONTSERRAT }}>Official Channels</Typography>
+        <Stack spacing={2}>
+          <Typography variant="caption" sx={{ color: alpha('#fff', 0.4), fontFamily: MONTSERRAT, textTransform: "uppercase" }}>Social Channels</Typography>
           {[
-            { label: "WhatsApp Gateway", icon: <WhatsAppIcon />, color: "#25D366", link: "https://wa.me/94767080553" },
-            { label: "Facebook Community", icon: <FacebookIcon />, color: "#1877F2", link: "https://facebook.com" },
-            { label: "Instagram Feed", icon: <InstagramIcon />, color: "#E4405F", link: "https://instagram.com" },
-            { label: "YouTube Channel", icon: <YouTubeIcon />, color: "#FF0000", link: "https://youtube.com" }
+            { label: "WhatsApp", icon: <WhatsAppIcon />, color: "#25D366", link: "https://wa.me/94767080553" },
+            { label: "Facebook", icon: <FacebookIcon />, color: "#1877F2", link: "https://facebook.com" },
+            { label: "Instagram", icon: <InstagramIcon />, color: "#E4405F", link: "https://instagram.com" },
+            { label: "YouTube", icon: <YouTubeIcon />, color: "#FF0000", link: "https://youtube.com" }
           ].map((item) => (
             <Button 
               key={item.label} 
@@ -414,14 +437,13 @@ const Topbar: React.FC = () => {
               startIcon={item.icon} 
               sx={{ 
                 justifyContent: "flex-start", 
-                color: "#fff", 
+                color: "#cbd5e1", 
                 fontFamily: MONTSERRAT, 
-                py: 2, 
-                px: 3,
-                borderRadius: "14px", 
-                border: `1px solid ${alpha(item.color, 0.4)}`, 
-                textTransform: 'none',
-                "&:hover": { bgcolor: alpha(item.color, 0.1), border: `1px solid ${item.color}` } 
+                py: 1.5, 
+                px: 2,
+                borderRadius: "10px", 
+                bgcolor: alpha(item.color, 0.05),
+                "&:hover": { bgcolor: alpha(item.color, 0.15), color: "#fff" } 
               }}
             >
               {item.label}
@@ -429,41 +451,43 @@ const Topbar: React.FC = () => {
           ))}
         </Stack>
 
-        <Box sx={{ mt: 'auto', textAlign: 'center', opacity: 0.3 }}>
-          <Typography variant="caption" sx={{ fontFamily: MONTSERRAT }}>
-            © 2026 buycourse.lk | Secure Support
-          </Typography>
+        <Box sx={{ mt: 'auto', pt: 4, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+           <Typography variant="body2" sx={{ color: "#fff", mb: 1, fontFamily: MONTSERRAT }}>Contact Direct</Typography>
+           <Link href="tel:+94767080553" underline="none" sx={{ color: alpha("#fff", 0.6), fontSize: "0.85rem", display: 'block', mb: 1, fontFamily: MONTSERRAT }}>+94 76 708 0553</Link>
+           <Link href="mailto:info@buycourse.lk" underline="none" sx={{ color: alpha("#fff", 0.6), fontSize: "0.85rem", display: 'block', fontFamily: MONTSERRAT }}>info@buycourse.lk</Link>
         </Box>
       </Drawer>
 
-      {/* --- MODAL INQUIRY FORM ARCHITECTURE --- */}
-  <Modal 
+      {/* --- INQUIRY FORM MODAL --- */}
+      <Modal 
         open={open} 
         onClose={() => setOpen(false)} 
         closeAfterTransition 
         BackdropComponent={Backdrop} 
-        BackdropProps={{ timeout: 500 }}
+        BackdropProps={{ timeout: 500, sx: { backdropFilter: 'blur(5px)', backgroundColor: 'rgba(0,0,0,0.6)' } }}
       >
         <Fade in={open}>
           <StyledModalBox>
-            {/* Header with Space Between */}
+            
+            {/* Header */}
             <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
               <Box>
-                <Typography variant="h5" sx={{ fontWeight: 900, fontFamily: MONTSERRAT, color: BRAND_DARK, fontSize: isMobile ? '1.25rem' : '1.5rem' }}>
-                  Submit Inquiry
+                <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: MONTSERRAT, color: BRAND_DARK }}>
+                  Inquiry Form
                 </Typography>
-                <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', mt: 0.5, fontFamily: MONTSERRAT, color: 'text.secondary' }}>
-                  <SafeIcon sx={{ fontSize: 14, mr: 0.8, color: BRAND_PRIMARY }} /> Secure Encrypted Communication
+                <Typography variant="body2" sx={{ mt: 0.5, fontFamily: MONTSERRAT, color: 'text.secondary', fontSize: '0.85rem' }}>
+                  Please fill in the details below.
                 </Typography>
               </Box>
-              <IconButton onClick={() => setOpen(false)} size="small" sx={{ mt: -1 }}><CloseIcon /></IconButton>
+              <IconButton onClick={() => setOpen(false)} size="small" sx={{ color: '#94a3b8' }}><CloseIcon /></IconButton>
             </Box>
             
-            <Divider sx={{ mb: 3 }} />
+            <Divider sx={{ mb: 3, borderColor: '#e2e8f0' }} />
 
-            {/* Form Fields with consistent side spacing */}
-            <Box sx={{ width: '100%' }}>
+            {/* Form Fields Stack */}
+            <Stack spacing={2.5}>
               <TextField {...textFieldProps} label="Full Name" name="name" value={form.name} onChange={handleInputChange} />
+              
               <TextField {...textFieldProps} label="Mobile Number" name="mobile" value={form.mobile} onChange={handleInputChange} />
               
               <TextField 
@@ -473,56 +497,68 @@ const Topbar: React.FC = () => {
                 name="type" 
                 value={form.type} 
                 onChange={handleInputChange}
-                SelectProps={{ MenuProps: { PaperProps: { sx: { borderRadius: '12px' } } } }}
+                SelectProps={{ MenuProps: { PaperProps: { sx: { borderRadius: '12px', mt: 1, boxShadow: '0 10px 30px rgba(0,0,0,0.1)' } } } }}
               >
                 {INQUIRY_OPTIONS.map((option) => (
-                  <MenuItem key={option.value} value={option.value} sx={{ fontFamily: MONTSERRAT, fontSize: '0.9rem' }}>
+                  <MenuItem key={option.value} value={option.value} sx={{ fontFamily: MONTSERRAT, fontSize: '0.9rem', py: 1.5 }}>
                     {option.label}
                   </MenuItem>
                 ))}
               </TextField>
 
-              {/* Stack for Order ID/Date - Dynamic spacing for all devices */}
-              <Stack 
-                direction={isMobile ? "column" : "row"} 
-                spacing={isMobile ? 0 : 2} 
-                sx={{ width: '100%' }}
-              >
+              <Stack direction={isMobile ? "column" : "row"} spacing={isMobile ? 2.5 : 2}>
                 <TextField {...textFieldProps} label="Order ID (Optional)" name="orderId" value={form.orderId} onChange={handleInputChange} />
                 <TextField 
                   {...textFieldProps} 
                   type="date" 
-                  label="Order Date" 
+                  label="Purchase Date" 
                   name="orderDate" 
                   value={form.orderDate} 
                   onChange={handleInputChange} 
-                  InputLabelProps={{ shrink: true, sx: { fontFamily: MONTSERRAT } }} 
+                  InputLabelProps={{ shrink: true, sx: { fontFamily: MONTSERRAT, color: '#64748b' } }} 
                 />
               </Stack>
 
-              <TextField {...textFieldProps} multiline rows={3} label="Description" name="description" value={form.description} onChange={handleInputChange} />
+              <TextField {...textFieldProps} multiline rows={3} label="Message / Description" name="description" value={form.description} onChange={handleInputChange} />
+            </Stack>
+
+            <Box mt={4}>
+              <Button 
+                fullWidth 
+                disabled={loading}
+                onClick={handleInquirySubmit}
+                startIcon={!loading && <WhatsAppIcon />}
+                sx={{ 
+                  py: 1.8, 
+                  borderRadius: "12px", 
+                  bgcolor: "#25D366", 
+                  color: "#fff", 
+                  fontWeight: 700, 
+                  fontFamily: MONTSERRAT, 
+                  textTransform: "none", 
+                  fontSize: "1rem",
+                  boxShadow: "0 4px 12px rgba(37, 211, 102, 0.3)",
+                  "&:hover": { bgcolor: "#1ebc57", boxShadow: "0 6px 15px rgba(37, 211, 102, 0.4)" },
+                  "&.Mui-disabled": { bgcolor: "#cbd5e1", color: "#fff" }
+                }}
+              >
+                {loading ? <CircularProgress size={24} color="inherit" /> : "Submit & Open WhatsApp"}
+              </Button>
+              
+              <Typography variant="caption" align="center" sx={{ display: 'block', mt: 2, color: '#94a3b8', fontFamily: MONTSERRAT, fontSize: '0.75rem' }}>
+                <SafeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5, color: BRAND_PRIMARY }} />
+                Your data is securely processed via our gateway.
+              </Typography>
             </Box>
 
-            <Button 
-              fullWidth 
-              disabled={loading}
-              onClick={handleInquirySubmit}
-              sx={{ 
-                py: 2, borderRadius: "12px", bgcolor: BRAND_PRIMARY, color: "#fff", fontWeight: 700, fontFamily: MONTSERRAT, textTransform: "none", fontSize: "1rem",
-                "&:hover": { bgcolor: "rgb(8, 70, 130)" },
-                "&.Mui-disabled": { bgcolor: alpha(BRAND_PRIMARY, 0.3), color: "#fff" }
-              }}
-            >
-              {loading ? <CircularProgress size={24} color="inherit" /> : "Verify & Send via WhatsApp"}
-            </Button>
           </StyledModalBox>
         </Fade>
       </Modal>
 
-      {/* --- NOTIFICATION GATEWAY --- */}
+      {/* --- SNACKBAR --- */}
       <Snackbar 
         open={toast.show} 
-        autoHideDuration={5000} 
+        autoHideDuration={4000} 
         onClose={() => setToast(t => ({ ...t, show: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
@@ -530,7 +566,7 @@ const Topbar: React.FC = () => {
           onClose={() => setToast(t => ({ ...t, show: false }))} 
           severity={toast.type} 
           variant="filled" 
-          sx={{ width: "100%", borderRadius: "12px", fontFamily: MONTSERRAT, fontWeight: 700, boxShadow: theme.shadows[10] }}
+          sx={{ width: "100%", borderRadius: "10px", fontFamily: MONTSERRAT, fontWeight: 600 }}
         >
           {toast.msg}
         </Alert>
@@ -540,9 +576,3 @@ const Topbar: React.FC = () => {
 };
 
 export default Topbar;
-
-/**
- * ============================================================================
- * END OF COMPONENT: Topbar
- * ============================================================================
- */
