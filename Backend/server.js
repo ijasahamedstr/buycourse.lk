@@ -15,23 +15,25 @@ import OrderserviceSection from "./routes/Order.route.js";
 // Create an instance of Express
 const app = express();
 
-// Middlewares
-app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// CORS setup
+// --- 1. MOVED CORS TO THE TOP & ADDED WWW DOMAIN ---
 app.use(
   cors({
     origin: [
       "https://buycourse.lk",
-      "https://buycourse-lk-umlb.vercel.app"
+      "https://www.buycourse.lk", // Added this
+      "https://buycourse-lk-umlb.vercel.app",
+      "http://localhost:5173", // Optional: Keep this for local development
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
+
+// Middlewares
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Connect DB
 connectDB();
@@ -50,8 +52,6 @@ app.use('/Slidersection',Slidersection);
 app.use('/Couressection',CourseSection);
 app.use('/Ottservice',OttserviceSection);
 app.use('/Odder',OrderserviceSection);
-
-
 
 // Start server
 const port = 8000;
