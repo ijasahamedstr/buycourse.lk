@@ -39,7 +39,6 @@ import {
 import { styled } from "@mui/material/styles";
 
 import MenuIcon from "@mui/icons-material/Menu";
-import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
 import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
 import HomeIcon from "@mui/icons-material/Home";
@@ -672,7 +671,7 @@ export default function EtsyStyleHeader() {
   };
 
   return (
-    <Box sx={{ fontFamily: Montserrat,marginTop:"70px" }}>
+    <Box sx={{ fontFamily: Montserrat, marginTop: "70px" }}>
       <AppBar
         position="static"
         elevation={0}
@@ -904,10 +903,12 @@ export default function EtsyStyleHeader() {
         </Toolbar>
       </AppBar>
 
-
-
       {/* Cart Drawer */}
-      <Drawer anchor="right" open={cartOpen} onClose={() => setCartOpen(false)}>
+      <Drawer
+        anchor="right"
+        open={cartOpen}
+        onClose={() => setCartOpen(false)}
+      >
         <Box
           sx={{
             width: 360,
@@ -957,7 +958,10 @@ export default function EtsyStyleHeader() {
                     fontFamily: Montserrat,
                   }}
                 >
-                  <Typography variant="body1" sx={{ fontFamily: Montserrat }}>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontFamily: Montserrat }}
+                  >
                     No products available
                   </Typography>
                   <Typography
@@ -1178,6 +1182,45 @@ export default function EtsyStyleHeader() {
         </Box>
       </Drawer>
 
+      {/* Category Drawer (Left) - Uses drawerOpen */}
+      <Drawer
+        anchor="left"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      >
+        <Box
+          role="presentation"
+          sx={{ width: 280, fontFamily: Montserrat, pt: 2 }}
+        >
+          <Typography
+            variant="h6"
+            sx={{ px: 2, pb: 1.5, fontFamily: Montserrat, fontWeight: 700 }}
+          >
+            Categories
+          </Typography>
+          <Divider />
+          <List>
+            {categories.map((text) => (
+              <ListItem key={text.path} disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    if (text.label === "Request Service")
+                      setRequestDialogOpen(true);
+                    else navigate(text.path);
+                    setDrawerOpen(false);
+                  }}
+                >
+                  <ListItemText
+                    primary={text.label}
+                    primaryTypographyProps={{ fontFamily: Montserrat }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+      </Drawer>
+
       {/* Request Service Dialog */}
       <Dialog
         open={requestDialogOpen}
@@ -1186,7 +1229,10 @@ export default function EtsyStyleHeader() {
         maxWidth="sm"
         aria-labelledby="request-dialog-title"
       >
-        <DialogTitle id="request-dialog-title" sx={{ fontFamily: Montserrat }}>
+        <DialogTitle
+          id="request-dialog-title"
+          sx={{ fontFamily: Montserrat }}
+        >
           Request Service
         </DialogTitle>
         <DialogContent>
@@ -1271,7 +1317,9 @@ export default function EtsyStyleHeader() {
               value={reqDesc}
               onChange={(e) => setReqDesc(e.target.value)}
               error={!!reqErrors.desc}
-              helperText={reqErrors.desc || "Give as much detail as needed"}
+              helperText={
+                reqErrors.desc || "Give as much detail as needed"
+              }
               multiline
               rows={4}
               fullWidth
@@ -1304,6 +1352,144 @@ export default function EtsyStyleHeader() {
               <CircularProgress size={18} sx={{ color: "#fff" }} />
             ) : null}
             Save & Send via WhatsApp
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Inquiry Dialog (Chat) - Uses inquiryDialogOpen */}
+      <Dialog
+        open={inquiryDialogOpen}
+        onClose={() => setInquiryDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        aria-labelledby="inquiry-dialog-title"
+      >
+        <DialogTitle
+          id="inquiry-dialog-title"
+          sx={{ fontFamily: Montserrat }}
+        >
+          Chat / Inquiry
+        </DialogTitle>
+        <DialogContent>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              mt: 1,
+              fontFamily: Montserrat,
+            }}
+          >
+            <TextField
+              label="Name"
+              value={inqName}
+              onChange={(e) => setInqName(e.target.value)}
+              error={!!inqErrors.name}
+              helperText={inqErrors.name}
+              fullWidth
+              InputLabelProps={{ sx: { fontFamily: Montserrat } }}
+              InputProps={{ sx: { fontFamily: Montserrat } }}
+              FormHelperTextProps={{ sx: { fontFamily: Montserrat } }}
+            />
+            <TextField
+              label="Mobile number (include country code)"
+              value={inqMobile}
+              onChange={(e) => setInqMobile(e.target.value)}
+              error={!!inqErrors.mobile}
+              helperText={inqErrors.mobile}
+              fullWidth
+              InputLabelProps={{ sx: { fontFamily: Montserrat } }}
+              InputProps={{ sx: { fontFamily: Montserrat } }}
+              FormHelperTextProps={{ sx: { fontFamily: Montserrat } }}
+            />
+            <FormControl
+              fullWidth
+              error={!!inqErrors.type}
+              sx={{ fontFamily: Montserrat }}
+            >
+              <InputLabel
+                id="inq-type-label"
+                sx={{ fontFamily: Montserrat }}
+              >
+                Inquiry Type
+              </InputLabel>
+              <Select
+                labelId="inq-type-label"
+                label="Inquiry Type"
+                value={inqType}
+                onChange={(e) => setInqType(String(e.target.value))}
+                sx={{ fontFamily: Montserrat }}
+                inputProps={{ sx: { fontFamily: Montserrat } }}
+              >
+                <MenuItem
+                  value={"General Inquiry"}
+                  sx={{ fontFamily: Montserrat }}
+                >
+                  General Inquiry
+                </MenuItem>
+                <MenuItem
+                  value={"Course Details"}
+                  sx={{ fontFamily: Montserrat }}
+                >
+                  Course Details
+                </MenuItem>
+                <MenuItem
+                  value={"Technical Support"}
+                  sx={{ fontFamily: Montserrat }}
+                >
+                  Technical Support
+                </MenuItem>
+                <MenuItem
+                  value={"Payment Issue"}
+                  sx={{ fontFamily: Montserrat }}
+                >
+                  Payment Issue
+                </MenuItem>
+              </Select>
+              {inqErrors.type && (
+                <FormHelperText sx={{ fontFamily: Montserrat }}>
+                  {inqErrors.type}
+                </FormHelperText>
+              )}
+            </FormControl>
+            <TextField
+              label="Description / Message"
+              value={inqDescription}
+              onChange={(e) => setInqDescription(e.target.value)}
+              error={!!inqErrors.description}
+              helperText={inqErrors.description}
+              multiline
+              rows={4}
+              fullWidth
+              InputLabelProps={{ sx: { fontFamily: Montserrat } }}
+              InputProps={{ sx: { fontFamily: Montserrat } }}
+              FormHelperTextProps={{ sx: { fontFamily: Montserrat } }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setInquiryDialogOpen(false)}
+            sx={{ fontFamily: Montserrat }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => saveAndShare("inquiry")}
+            sx={{
+              background: "rgb(10, 83, 151)",
+              fontFamily: Montserrat,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+            disabled={loading}
+          >
+            {loading ? (
+              <CircularProgress size={18} sx={{ color: "#fff" }} />
+            ) : null}
+            Send via WhatsApp
           </Button>
         </DialogActions>
       </Dialog>
@@ -1341,9 +1527,17 @@ export default function EtsyStyleHeader() {
           >
             {[
               { label: "Home", value: "home", icon: <HomeIcon /> },
-              { label: "Categories", value: "categories", icon: <MenuIcon /> },
+              {
+                label: "Categories",
+                value: "categories",
+                icon: <MenuIcon />,
+              },
               { label: "Cart", value: "cart", icon: <ShoppingBagIcon /> },
-              { label: "Chat", value: "chat", icon: <ChatBubbleOutlineIcon /> },
+              {
+                label: "Chat",
+                value: "chat",
+                icon: <ChatBubbleOutlineIcon />,
+              },
             ].map((item) => (
               <BottomNavigationAction
                 key={item.value}
@@ -1355,9 +1549,13 @@ export default function EtsyStyleHeader() {
                       p: 1.5,
                       borderRadius: "50%",
                       bgcolor:
-                        bottomNavValue === item.value ? "#000" : "transparent",
+                        bottomNavValue === item.value
+                          ? "#000"
+                          : "transparent",
                       color:
-                        bottomNavValue === item.value ? "#fff" : iconColor,
+                        bottomNavValue === item.value
+                          ? "#fff"
+                          : iconColor,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",

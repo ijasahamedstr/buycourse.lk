@@ -7,18 +7,16 @@
  * ============================================================================
  */
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Box, Container, Typography, Button, CircularProgress, Stack,
   alpha, styled, useTheme, useMediaQuery, Divider
 } from "@mui/material";
 import {
-  ArrowForwardIos as ArrowIcon,
   TimerOutlined as TimeIcon,
   AutoAwesome as MagicIcon,
   VerifiedUser as VerifiedIcon,
   Language as GlobeIcon,
-  LocalFireDepartment as HotIcon
 } from "@mui/icons-material";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination, Navigation, EffectCoverflow } from "swiper/modules";
