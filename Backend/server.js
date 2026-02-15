@@ -24,7 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: [
-      "https://www.buycourse.lk",
+      "http://localhost:5173",
       "https://buycourse-lk-umlb.vercel.app"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
