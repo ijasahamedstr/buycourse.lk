@@ -2,49 +2,51 @@ import moment from "moment";
 import CourseModel from "../models/Couressection.models.js";
 
 export const CourseCreate = async (req, res) => {
-    const { courseName, courseDescription,coursePrice,duration,courseImage ,mainHeadings,courseCategory,coursedemovideolink} = req.body;
-
-    // Input validation
-    if (!courseName || !courseDescription || !coursePrice || !duration|| !courseImage|| !mainHeadings|| !courseCategory) {
-        return res.status(400).json({
-            status: 400,
-            message: 'Please provide gift name, gift type, and gift image.'
-        });
-    }
+    const { 
+        courseName, 
+        courseDescription, 
+        coursePrice, 
+        duration, 
+        courseImage, 
+        mainHeadings, 
+        courseCategory, 
+        coursedemovideolink 
+    } = req.body;
 
     try {
+        // Using Date.now() or new Date() is often preferred over moment 
+        // unless you need specific formatting for the DB string.
         const date = moment().format('YYYY-MM-DD');
 
-        const newCoures = new CourseModel({
+        const newCourse = new CourseModel({
             courseName,
             courseDescription,
             coursePrice,
             duration,
             courseImage,
-            mainHeadings: mainHeadings || [],
+            mainHeadings: mainHeadings || [], // Ensures it's at least an empty array
             courseCategory,
             coursedemovideolink,
             date,
         });
 
-        const savedcoures = await newCoures.save();
+        const savedCourse = await newCourse.save();
 
         res.status(201).json({
             status: 201,
-            message: 'News created successfully.',
-            data: savedcoures,
+            message: 'Course created successfully.',
+            data: savedCourse,
         });
+
     } catch (error) {
-        console.error('Error creating News:', error);
+        console.error('Error creating Course:', error);
         res.status(500).json({
             status: 500,
-            message: 'Internal server error. Could not create the News.',
+            message: 'Internal server error. Could not create the course.',
             error: error.message,
         });
     }
 };
-
-
 
 
 
