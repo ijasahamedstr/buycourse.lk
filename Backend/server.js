@@ -20,7 +20,9 @@ app.use(
   cors({
     origin: [
       "https://buycourse.lk",
-      "https://www.buycourse.lk"
+      "https://www.buycourse.lk", // Added this
+      "https://buycourse-lk-umlb.vercel.app",
+      "http://localhost:5173", // Optional: Keep this for local development
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
